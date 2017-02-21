@@ -1,0 +1,18 @@
+[submodule "ext/googletest"]
+	path = ext/googletest
+	url = https://github.com/google/googletest.git
+[submodule "ext/uvpp"]
+	path = ext/uvpp
+	url = https://github.com/redbrain/uvpp.git
+[submodule "ext/libuv-cmake"]
+	path = ext/libuv-cmake
+	url = https://github.com/redbrain/libuv-cmake.git
+[submodule "ext/cppcodec"]
+	path = ext/cppcodec
+	url = https://github.com/tplgy/cppcodec.git
+[submodule "ext/glog"]
+	path = ext/glog
+	url = https://github.com/redbrain/glog.git
+[submodule "ext/concurrentqueue"]
+	path = ext/concurrentqueue
+	url = https://github.com/redbrain/concurrentqueue
