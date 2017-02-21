@@ -48,10 +48,8 @@ if(BUILD_JNI)
     ${PROJECT_SOURCE_DIR}/src/jni/RtspDelegateWrapper.h)
 endif()
 
-add_library(overflow
+set(OVERFLOW_HEADERS
   RtspWanClient.h
-  RtspWanClient.cc
-
   IRtspDelegate.h
   ITransportDelegate.h
 
@@ -66,7 +64,6 @@ add_library(overflow
   RtspFactory.h
 
   InterleavedTcpTransport.h
-  InterleavedTcpTransport.cc
 
   Response.h
   RtspResponse.h
@@ -78,19 +75,23 @@ add_library(overflow
   SessionDescriptionFactory.h
 
   H264Depacketizer.h
-  H264Depacketizer.cc
-
   MP4VDepacketizer.h
-  MP4VDepacketizer.cc
   MJPEGDepacketizer.h
-  MJPEGDepacketizer.cc
-  
+ 
   RtpPacket.h
-  RtpPacket.cc
-
   ByteBuffer.h
   Helpers.h
+)
 
+add_library(overflow 
+  RtspWanClient.cc
+  InterleavedTcpTransport.cc
+  H264Depacketizer.cc
+  MP4VDepacketizer.cc
+  MJPEGDepacketizer.cc
+  RtpPacket.cc
+
+  ${OVERFLOW_HEADERS}
   ${JNI_SOURCES}
 
   $<TARGET_OBJECTS:uv_obj>
@@ -102,3 +103,12 @@ add_dependencies(overflow uv glog)
 if(BUILD_JNI)
   target_link_libraries (overflow ${JNI_LIBS})
 endif()
+
+install(TARGETS overflow
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
+
+install(FILES ${OVERFLOW_HEADERS}
+  DESTINATION include/overflow
+  )
