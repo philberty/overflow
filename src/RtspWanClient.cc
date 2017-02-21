@@ -55,16 +55,16 @@ bool Overflow::RtspWanClient::SendDescribeRequest()
     bool received = SendRtsp(describe_request, resp);
 
     if (received == false) {
+        LOG(ERROR) << "describe request timeout";
         delete describe_request;
         return false;
     }
     
     const DescribeResponse rtsp_resp(resp);
-    const std::vector<SessionDescription>& palettes = rtsp_resp.GetSessionDescriptions();
-
-    
     bool ok = rtsp_resp.Ok();
+    
     if (ok) {
+        const std::vector<SessionDescription>& palettes = rtsp_resp.GetSessionDescriptions();
         m_palette = AskDelegateForPalette(palettes);
     }
 
