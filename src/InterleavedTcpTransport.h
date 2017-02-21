@@ -89,6 +89,8 @@ namespace Overflow {
         }
 
         void NotifyOfRtspResponse(Response* resp) {
+            std::string resp_str = resp->GetStringBuffer();
+            LOG(INFO) << "Received: " << resp_str;
             m_responseQueue.enqueue(resp);
         }
 
