@@ -48,14 +48,10 @@ namespace Overflow {
                     palettes.push_back(session);
                 }
                 else if (!version_line.empty()) {
-                    ostringstream message;
-                    message << "Unhandled Session Description version: [" << version_line << "]";
-                    throw runtime_error{ message.str() };
+                    LOG(ERROR) << "Unhandled Session Description version: [" << version_line << "]";
                 }
                 else {
-                    ostringstream message;
-                    message << "No Session Description available";
-                    throw runtime_error{ message.str() };
+                    LOG(ERROR) << "No Session Description available";
                 }
             }
 
