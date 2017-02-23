@@ -138,6 +138,7 @@ namespace Overflow {
         std::string m_session;
         bool m_processedFirstPayload;
         std::vector<unsigned char> m_currentFrame;
+        std::mutex m_mutex;
     };
     
 };

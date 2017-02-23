@@ -32,7 +32,7 @@ Overflow::RtspWanClient::RtspWanClient(Overflow::IRtspDelegate * const delegate,
     : m_url(url),
       m_loop(),
       m_keep_alive_timer(m_loop),
-      m_rtsp_timeout_milliseconds(1000),
+      m_rtsp_timeout_milliseconds(3000),
       m_thread(nullptr),
       m_delegate(delegate),
       m_transport(this, m_loop, url),
@@ -118,7 +118,8 @@ bool Overflow::RtspWanClient::SendSetupRequest(bool serverAllowsAggregate)
     }
 
     bool ok = rtsp_resp.Ok();
-    
+
+    if (ok)
     // ensure channel is inline with server, some servers in the wild change...
     m_transport.SetRtpInterleavedChannel(rtsp_resp.GetRtpInterleavedChannel());
     LOG(INFO) << "Rtp Interleaved Channel set to: " << rtsp_resp.GetRtpInterleavedChannel();
@@ -240,7 +241,7 @@ bool Overflow::RtspWanClient::SendTeardownRequest()
 }
 
 bool Overflow::RtspWanClient::Start()
-{    
+{
     m_thread = new std::thread([&]() {
             try {
                 LOG(INFO) << "event-loop started on:  " << std::this_thread::get_id();
@@ -253,34 +254,38 @@ bool Overflow::RtspWanClient::Start()
             }
         });
 
-    bool did_connect = m_transport.WaitForConnection();
-    if (not did_connect) {
-        LOG(INFO) << "rtsp-wan-client failed to connect";
-        return false;
-    }
 
     // flag to cleanup
     bool failed = false;
 
-    // start with describe/setup/play
-    bool received = SendDescribeRequest();
-    if (received == false) {
-        LOG(ERROR) << "DESCRIBE FAILED";
+    // connect
+    bool did_connect = m_transport.WaitForConnection();
+    if (not did_connect) {
+        LOG(INFO) << "rtsp-wan-client failed to connect";
         failed = true;
     }
-    else {
-        received = SendSetupRequest();
 
+    if (did_connect) {
+        // start with describe/setup/play
+        bool received = SendDescribeRequest();
         if (received == false) {
-            LOG(ERROR) << "SETUP FAILED";
+            LOG(ERROR) << "DESCRIBE FAILED";
             failed = true;
         }
         else {
-            received = SendPlayRequest();
-
+            received = SendSetupRequest();
+            
             if (received == false) {
-                LOG(ERROR) << "PLAY FAILED";
+                LOG(ERROR) << "SETUP FAILED";
                 failed = true;
+            }
+            else {
+                received = SendPlayRequest();
+                
+                if (received == false) {
+                    LOG(ERROR) << "PLAY FAILED";
+                    failed = true;
+                }
             }
         }
     }
@@ -295,22 +300,31 @@ bool Overflow::RtspWanClient::Start()
 
 void Overflow::RtspWanClient::StartKeepAliveTimer()
 {
-    uvpp::Async async_keep_alive(m_loop, [&]() {
+    // uvpp::Async async_keep_alive(m_loop, [&]() {
             
-            bool ok = SendOptionsRequst();
-            if (!ok) {
-                LOG(ERROR) << "Failed keep-alive";
+    //         bool ok = SendOptionsRequst();
+    //         if (!ok) {
+    //             LOG(ERROR) << "Failed keep-alive";
                 
-            }
-        });
+    //         }
+    //     });
     
     uint64_t timeout_millis = (m_keepAliveIntervalInSeconds - 5) * 1000;
     std::chrono::duration<uint64_t, std::milli> timeout(timeout_millis);
     m_keep_alive_timer.start([&]() {
             
             LOG(INFO) << "Keep alive request";
+            
+            bool ok = SendOptionsRequst();
+            if (!ok) {
+                LOG(ERROR) << "Failed keep-alive";
+                
+            }
+            LOG(INFO) << ok;
         },
-        timeout, timeout);
+        std::chrono::duration<uint64_t, std::milli>(5000), timeout);
+    
+    LOG(INFO) << "started keep-alive timer";
 }
 
 void Overflow::RtspWanClient::OnRtpPacket(const RtpPacket* packet)
@@ -342,6 +356,7 @@ void Overflow::RtspWanClient::Stop()
 
 bool Overflow::RtspWanClient::SendRtsp(Rtsp* const request, Response*& resp)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     const ByteBuffer& buf = request->GetBuffer();
 
     LOG(INFO) << "Sending:: " << request->ToString();

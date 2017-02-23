@@ -25,6 +25,7 @@
 #include <uvpp/loop.hpp>
 #include <uvpp/tcp.hpp>
 #include <blockingconcurrentqueue.h>
+#include <glog/logging.h>
 
 #include "ITransportDelegate.h"
 #include "RtpPacket.h"
