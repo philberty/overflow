@@ -22,13 +22,21 @@
 #ifndef __SESSION_DESCRIPTION_H__
 #define __SESSION_DESCRIPTION_H__
 
-#include "MimeTypes.h"
-
 #include <string>
 #include <vector>
 
 
 namespace Overflow {
+
+    typedef enum {
+
+        H264,
+        MP4V,
+        MJPEG,
+
+        UNKNOWN
+
+    } RtspSessionType;
 
     class SessionDescription {
     public:
