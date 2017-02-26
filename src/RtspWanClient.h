@@ -31,6 +31,7 @@
 #include "SessionDescription.h"
 #include "RtpPacket.h"
 
+#include <blockingconcurrentqueue.h>
 #include <uvpp/loop.hpp>
 #include <uvpp/async.hpp>
 #include <uvpp/timer.hpp>
@@ -40,6 +41,7 @@
 #include <thread>
 #include <functional>
 #include <mutex>
+
 
 namespace Overflow {
 
@@ -127,7 +129,8 @@ namespace Overflow {
         
         int m_rtsp_timeout_milliseconds;
         
-        std::thread* m_thread;
+        std::thread* m_eventLoopThread;
+        std::thread* m_keepAliveThread;
         IRtspDelegate * const m_delegate;
         InterleavedTcpTransport m_transport;
         
@@ -137,8 +140,10 @@ namespace Overflow {
         int m_keepAliveIntervalInSeconds;
         std::string m_session;
         bool m_processedFirstPayload;
+        int m_lastSeqNum;
         std::vector<unsigned char> m_currentFrame;
         std::mutex m_mutex;
+        moodycamel::BlockingConcurrentQueue<int> m_keepAliveEventQueue;
     };
     
 };

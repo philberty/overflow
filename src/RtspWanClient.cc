@@ -33,14 +33,15 @@ Overflow::RtspWanClient::RtspWanClient(Overflow::IRtspDelegate * const delegate,
       m_loop(),
       m_keep_alive_timer(m_loop),
       m_rtsp_timeout_milliseconds(3000),
-      m_thread(nullptr),
+      m_eventLoopThread(nullptr),
       m_delegate(delegate),
       m_transport(this, m_loop, url),
       m_factory(url),
       m_palette(),
       m_keepAliveIntervalInSeconds(60),
       m_session(),
-      m_processedFirstPayload(false) { }
+      m_processedFirstPayload(false),
+      m_lastSeqNum(-1) { }
 
 Overflow::RtspWanClient::~RtspWanClient()
 {
@@ -242,7 +243,7 @@ bool Overflow::RtspWanClient::SendTeardownRequest()
 
 bool Overflow::RtspWanClient::Start()
 {
-    m_thread = new std::thread([&]() {
+    m_eventLoopThread = new std::thread([&]() {
             try {
                 LOG(INFO) << "event-loop started on:  " << std::this_thread::get_id();
                 m_transport.Start();
@@ -300,29 +301,42 @@ bool Overflow::RtspWanClient::Start()
 
 void Overflow::RtspWanClient::StartKeepAliveTimer()
 {
-    // uvpp::Async async_keep_alive(m_loop, [&]() {
+    m_keepAliveThread = new std::thread([&]() {
             
-    //         bool ok = SendOptionsRequst();
-    //         if (!ok) {
-    //             LOG(ERROR) << "Failed keep-alive";
+            int timeout_millis = 1000;
+            std::int64_t timeout_usecs = timeout_millis * 1000;
+            
+            while (true) {
+                int v;    
+                bool ok = m_keepAliveEventQueue.wait_dequeue_timed(v, timeout_usecs);
+                if (!ok)
+                    continue;
                 
-    //         }
-    //     });
+                bool stop = v == 0;
+                if (stop)
+                    break;
+                else
+                {
+                    ok = SendOptionsRequst();
+                    if (!ok) {
+                        NotifyDelegateOfTimeout();
+                    }
+                    else {
+                        LOG(INFO) << "keep alive ok";
+                    }
+                }
+            }
+        });
     
+    // trim the keepalive interval to ensure we don't miss it.
     uint64_t timeout_millis = (m_keepAliveIntervalInSeconds - 5) * 1000;
     std::chrono::duration<uint64_t, std::milli> timeout(timeout_millis);
+    
     m_keep_alive_timer.start([&]() {
-            
-            LOG(INFO) << "Keep alive request";
-            
-            bool ok = SendOptionsRequst();
-            if (!ok) {
-                LOG(ERROR) << "Failed keep-alive";
-                
-            }
-            LOG(INFO) << ok;
+            LOG(INFO) << "keep-alive";
+            m_keepAliveEventQueue.enqueue(1);
         },
-        std::chrono::duration<uint64_t, std::milli>(5000), timeout);
+        std::chrono::duration<uint64_t, std::milli>(1000), timeout);
     
     LOG(INFO) << "started keep-alive timer";
 }
@@ -335,11 +349,22 @@ void Overflow::RtspWanClient::OnRtpPacket(const RtpPacket* packet)
 
 void Overflow::RtspWanClient::Stop()
 {
-    if (m_thread == nullptr) {
+    if (m_eventLoopThread == nullptr) {
         return;
     }
     
     SendTeardownRequest();
+
+    // stop trying to keep alive
+    m_keep_alive_timer.stop();
+    
+    if (m_keepAliveThread != nullptr) {    
+        // send stop signal
+        m_keepAliveEventQueue.enqueue(0);
+        m_keepAliveThread->join();
+        delete m_keepAliveThread;
+        m_keepAliveThread = nullptr;
+    }
     
     LOG(INFO) << "Stopping RtspWanClient";
     uvpp::Async async(m_loop, [&]() {
@@ -348,9 +373,9 @@ void Overflow::RtspWanClient::Stop()
         });
     async.send();
     
-    m_thread->join();
-    delete m_thread;
-    m_thread = nullptr;
+    m_eventLoopThread->join();
+    delete m_eventLoopThread;
+    m_eventLoopThread = nullptr;
     LOG(INFO) << "stopped event-loop thread";
 }
 
@@ -365,8 +390,24 @@ bool Overflow::RtspWanClient::SendRtsp(Rtsp* const request, Response*& resp)
     return m_transport.WaitForResponse(resp, m_rtsp_timeout_milliseconds);
 }
 
-void Overflow::RtspWanClient::ProcessRtpPacket(const RtpPacket* packet) {
+void Overflow::RtspWanClient::ProcessRtpPacket(const RtpPacket* packet)
+{
+    int seq_num = packet->GetSequenceNumber();
+    bool initialized_last_seq_num = m_lastSeqNum != -1;
+    if (not initialized_last_seq_num) {
+        m_lastSeqNum = seq_num - 1;
+    }
 
+    // ffserver doesnt seem to like keeping things in sequence with my test.264
+    
+    // bool out_of_sequence = (m_lastSeqNum + 1) != seq_num;
+    // if (out_of_sequence) {
+    //     LOG(ERROR) << "out of sequence rtp-packets: " << m_lastSeqNum << "[LAST] - " << seq_num << "[CURRENT]";
+    //     NotifyDelegateOfTimeout();
+    //     return;
+    // }
+    m_lastSeqNum = seq_num;
+    
     switch (m_palette.GetType()) {
     case H264:
         ProcessH264Packet(packet);
