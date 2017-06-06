@@ -22,3 +22,14 @@ $ cd android/overflow
 $ ./gradlew clean build
 ```
 
+## TODO
+
+* iOS build - Podfile/Carthage
+* iOS Decoders - H264/MJPEG/MPEG4
+* Android decoders
+* Cleanup code
+* PIMPL Pattern implement
+* More unit-tests
+* Test reconnection does libuv do this?
+* RTSP->RTMP
+* Python Bindings
