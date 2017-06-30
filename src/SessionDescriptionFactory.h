@@ -22,41 +22,16 @@
 #ifndef __SESSION_DESCRIPTION_FACTORY_H__
 #define __SESSION_DESCRIPTION_FACTORY_H__
 
-#include "SessionDescriptionV0.h"
-#include "Helpers.h"
-
 #include <vector>
 #include <string>
 
 
-namespace Overflow {
-    
-    class SessionDescriptionFactory {
+namespace Overflow
+{    
+    class SessionDescriptionFactory
+    {
     public:
-
-        static
-        std::vector<SessionDescription> ParseSessionDescriptionsFromBuffer(const std::string& body)
-        {
-            std::vector<SessionDescription> palettes;
-            std::vector<std::string> lines = Helper::StringSplit(body, "\n");
-            
-            if (lines.size() > 0) {
-                std::string version_line = lines[0];
-                
-                if (version_line.find("v=0") != std::string::npos) {
-                    SessionDescriptionV0 session(body);
-                    palettes.push_back(session);
-                }
-                else if (!version_line.empty()) {
-                    LOG(ERROR) << "Unhandled Session Description version: [" << version_line << "]";
-                }
-                else {
-                    LOG(ERROR) << "No Session Description available";
-                }
-            }
-
-            return palettes;
-        }
+        static std::vector<SessionDescription> parseSessionDescriptions(const std::string& body);
     };
 
 };

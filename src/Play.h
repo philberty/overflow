@@ -25,18 +25,18 @@
 
 #include "Rtsp.h"
 
-namespace Overflow {
-
-    class Play: public Rtsp {
+namespace Overflow
+{
+    class Play: public Rtsp
+    {
     public:
         Play(const std::string& path, int seqNum, const std::string& session)
             : Rtsp("PLAY", path, seqNum) {
 
-            AddHeader("Session", session);
-            AddHeader("Range", "npt=0.000-");
+            addHeader("Session", session);
+            addHeader("Range", "npt=0.000-");
         }
     };
-    
 };
 
 #endif //__PLAY_REQUEST_H__

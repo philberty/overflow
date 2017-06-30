@@ -22,117 +22,45 @@
 #ifndef __INTERLEAVED_TCP_TRANSPORT_H__
 #define __INTERLEAVED_TCP_TRANSPORT_H__
 
+#include "ITransportDelegate.h"
+#include "Transport.h"
+
 #include <uvpp/loop.hpp>
 #include <uvpp/tcp.hpp>
-#include <blockingconcurrentqueue.h>
-#include <glog/logging.h>
-
-#include "ITransportDelegate.h"
-#include "RtpPacket.h"
-#include "Response.h"
 
 
-namespace Overflow {
-    
-    class InterleavedTcpTransport {
+namespace Overflow
+{
+    class InterleavedTcpTransport : public Transport
+    {
     public:
-        InterleavedTcpTransport(ITransportDelegate * const delegate, uvpp::loop& loop, const std::string& url);
+        InterleavedTcpTransport(ITransportDelegate * const delegate,
+                                uvpp::loop& loop,
+                                const std::string& url);
 
-        void Write(const unsigned char *buffer, const size_t length);
+        void setRtpInterleavedChannel(int channel);
 
-        void SetRtpInterleavedChannel(int channel) { m_rtpInterleavedChannel = channel; }
+        void setRtcpInterleavedChannel(int channel);
 
-        std::string GetTransportHeaderString() const {
-            char rtp_channel[12];
-            char rtcp_channel[12];
-            memset(rtp_channel, 0, sizeof(rtp_channel));
-            memset(rtcp_channel, 0, sizeof(rtcp_channel));
-            snprintf(rtp_channel, sizeof(rtp_channel), "%d", m_rtpInterleavedChannel);
-            snprintf(rtcp_channel, sizeof(rtcp_channel), "%d", m_rtcpInterleavedChannel);
+        void write(const unsigned char *buffer, const size_t length) override;
 
-            return "RTP/AVP/TCP;unicast;interleaved="
-                + std::string(rtp_channel)
-                + "-"
-                + std::string(rtcp_channel);
-        }
+        std::string getTransportHeaderString() const override;
 
-        void Start();
+        bool connect() override;
 
-        void Stop();
-
-        bool WaitForResponse(Response*& resp, int timeout_millis) {
-            if (not IsRunning()) {
-                return false;
-            }
-            
-            std::int64_t timeout_usecs = timeout_millis * 1000;
-            return m_responseQueue.wait_dequeue_timed(resp, timeout_usecs);
-        }
-
-        bool IsRunning() {
-            return m_did_connect;
-        }
-
-        bool WaitForConnection() {
-            int timeout_millis = 3000;
-            std::int64_t timeout_usecs = timeout_millis * 1000;
-            
-            Response *resp;
-            return m_responseQueue.wait_dequeue_timed(resp, timeout_usecs);
-        }
+        void shutdown() override;
 
     private:
+        void readCallback(const char* buf, ssize_t len);
 
-        void Read(const std::vector<unsigned char>& response);
+        size_t readResponse(const std::vector<unsigned char>& response);
 
-        void NotifyOfConnection() {
-            m_responseQueue.enqueue(nullptr);
-        }
-
-        void NotifyOfRtspResponse(Response* resp) {
-            std::string resp_str = resp->GetStringBuffer();
-            LOG(INFO) << "Received: " << resp_str;
-            m_responseQueue.enqueue(resp);
-        }
-
-        void NotifyDelegateOfRtpPacket(const RtpPacket* packet) {
-            if (m_delegate != nullptr) {
-                m_delegate->OnRtpPacket(packet);
-            }
-        }
-
-        void NotifyDelegateOfAnnounce() {
-            if (m_delegate != nullptr) {
-                m_delegate->OnAnnounce();
-            }
-        }
-
-        void NotifyDelegateOfRedirect() {
-            if (m_delegate != nullptr) {
-                m_delegate->OnRedirect();
-            }
-        }
-
-        void NotifyDelegateOfWriteFailure() {
-            if (m_delegate != nullptr) {
-                m_delegate->OnSocketWriteError();
-            }
-        }        
-        
-        ITransportDelegate* const m_delegate;
-        uvpp::loop& m_loop;
-        uvpp::Tcp m_tcp;
-
-        std::string m_host;
-        int m_port;
-        
-        bool m_did_connect;
-
-        int m_rtpInterleavedChannel;
-        int m_rtcpInterleavedChannel;
-
-        std::vector<unsigned char> m_receivedBuffer;
-        moodycamel::BlockingConcurrentQueue<Response*> m_responseQueue;
+        uvpp::Tcp mTcp;
+        std::string mHost;
+        int mPort;
+        int mRtpInterleavedChannel;
+        int mRtcpInterleavedChannel;
+        std::vector<unsigned char> mReceivedBuffer;
     };
 };
 

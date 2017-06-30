@@ -1,4 +1,3 @@
-// -*-c++-*-
 // Copyright (c) 2017 Philip Herron.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,41 +18,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include "SessionDescriptionV0.h"
+#include "Helpers.h"
 
-#ifndef __RTSP_H__
-#define __RTSP_H__
-
-#include "ByteBuffer.h"
-
-#include <string>
-#include <map>
+#include <glog/logging.h>
 
 
-namespace Overflow
+std::vector<SessionDescription>
+Overflow::SessionDescriptionFactory::parseSessionDescriptions(const std::string& body)
 {
-    class Rtsp
-    {
-    public:
-        Rtsp(const std::string& method, const std::string& path, int seqNum);
-
-        const ByteBuffer& getBuffer();
-
-        void addAuth(const std::string& encoded);
-
-        const std::string& getMethod() const;
-
-        std::string toString();
-
-    protected:
-        void addHeader(const std::string& key, const std::string& value);
-
-    private:
-        std::map<std::string, std::string> mHeaders;
-        std::string mMethod;
-        std::string mPath;
-        ByteBuffer mBuffer;
-    };
+    std::vector<SessionDescription> palettes;
+    std::vector<std::string> lines = Helper::stringSplit(body, "\n");
     
-};
-
-#endif //__RTSP_H__
+    if (lines.size() > 0)
+    {
+        std::string version_line = lines[0];
+        
+        if (version_line.find("v=0") != std::string::npos)
+        {
+            SessionDescriptionV0 session(body);
+            palettes.push_back(session);
+        }
+        else if (!version_line.empty())
+        {
+            LOG(ERROR) << "Unhandled Session Description version: [" << version_line << "]";
+        }
+        else
+        {
+            LOG(ERROR) << "No Session Description available";
+        }
+    }
+    return palettes;
+}

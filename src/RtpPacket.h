@@ -22,9 +22,9 @@
 #ifndef __RTP_PACKET_H__
 #define __RTP_PACKET_H__
 
-#include <cstdlib>
-
 #include "Response.h"
+
+#include <cstdlib>
 
 
 namespace Overflow {
@@ -33,16 +33,9 @@ namespace Overflow {
     public:        
         RtpPacket(const unsigned char *buffer, uint16_t length);
 
-        RtpPacket(const Response* response)
-            : RtpPacket(response->BytesPointer(), response->PointerLength())
-            { }
+        RtpPacket(const Response* response);
 
-        ~RtpPacket() {
-            if (HasExtension()) {
-                free(m_extension);
-            }
-            free(m_payload);
-        }
+        ~RtpPacket();
 
         int GetVersion() const { return m_version; }
 

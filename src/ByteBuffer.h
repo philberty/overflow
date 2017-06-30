@@ -22,91 +22,37 @@
 #ifndef __BYTE_BUFFER_H__
 #define __BYTE_BUFFER_H__
 
-#include <cstring>
-#include <cstdlib>
+#include <string>
 
 
-namespace Overflow {
-
-    class ByteBuffer {
+namespace Overflow
+{
+    class ByteBuffer
+    {
     public:
+        ByteBuffer();
 
-        ByteBuffer(): m_bytes(nullptr), m_length(0)  { }
+        ByteBuffer(const std::string& buffer);
 
-        ByteBuffer(const std::string& buffer): m_bytes(nullptr), m_length(0)  {
-            Append(buffer);
-        }
+        ~ByteBuffer();
 
-        ByteBuffer(ByteBuffer& buffer): m_bytes(nullptr), m_length(0)  {
-            Append(buffer.BytesPointer(), buffer.Length());
-        }
+        void append(const unsigned char *bytes,
+                    const size_t length);
+        
+        void append(const std::string& bytes);
+            
+        void insert(const unsigned char *bytes,
+                    const size_t length,
+                    const size_t offs);
 
-        ~ByteBuffer() {
-            if (m_bytes != nullptr) {
-                free(m_bytes);
-            }
-        }
+        void insert(const std::string& bytes,
+                    const size_t offs);
 
-        void Append(const unsigned char *bytes, const size_t length) {
-            if (m_bytes == nullptr) {
-                m_bytes = (unsigned char*)malloc(length);
-            } else {
-                unsigned char * buffer = (unsigned char*)malloc(length + m_length);
-                memcpy(buffer, m_bytes, m_length);
+        const unsigned char * getBytesPointer() const;
 
-                free(m_bytes);
-                m_bytes = buffer;
-            }
+        const size_t length() const;
 
-            memcpy(m_bytes+m_length, bytes, length);
-            m_length += length;
-        }
-
-        void Append(const std::string& bytes) {
-            Append((const unsigned char *)bytes.c_str(), bytes.length());
-        }
-
-        void Insert(const unsigned char *bytes, const size_t length, const size_t offs) {
-            if (m_bytes == nullptr) {
-                Append(bytes, length);
-            } else if (m_length - offs >= length) {
-                memcpy(m_bytes+offs, bytes, length);
-            } else {
-                unsigned char *buffer = (unsigned char *)malloc(offs + length);
-                memcpy(buffer, m_bytes, offs);
-                memcpy(buffer+offs, bytes, length);
-
-                free(m_bytes);
-                m_bytes = buffer;
-                m_length = offs + length;
-            }
-        }
-
-        void Insert(const std::string& bytes, const size_t offs) {
-            Insert((const unsigned char *)bytes.c_str(), bytes.length(), offs);
-        }
-
-        const unsigned char * BytesPointer() const {
-            return m_bytes;
-        }
-
-        const size_t Length() const {
-            return m_length;
-        }
-
-        void GetBytes(unsigned char ** const buffer, size_t * const length) const {
-            *buffer = (unsigned char *)malloc(m_length);
-            memcpy(*buffer, m_bytes, m_length);
-            *length = m_length;
-        }
-
-        void Reset() {
-            if (m_bytes != nullptr) {
-                delete m_bytes;
-            }
-            m_bytes = nullptr;
-            m_length = 0;
-        }
+        void reset();
 
     private:
         unsigned char *m_bytes;

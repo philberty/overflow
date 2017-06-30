@@ -25,91 +25,27 @@
 #include <string>
 #include <map>
 
-#include <stdexcept>
-#include <cstdlib>
 
-#include "Helpers.h"
-
-using std::runtime_error;
-
-
-namespace Overflow {
-
-    class Url {
+namespace Overflow
+{
+    class Url
+    {
     public:
-        Url(const std::string& raw, int default_port=80) {
-            std::size_t protocol_index = raw.find("://");
-            if (protocol_index == std::string::npos) {
-                throw runtime_error{"Failed to parse url"};
-            }
+        Url(const std::string& raw, int default_port);
 
-            // scheme
-            m_protocol.assign(raw.substr(0, protocol_index));
+        int getPort() const { return m_port; }
 
-            // offset
-            std::size_t offs = protocol_index + 3;
+        const std::string& getPath() const { return m_path; }
 
-            // auth
-            std::size_t auth_end_index = raw.find("@", offs);
-            if (auth_end_index != std::string::npos) {
-                std::size_t auth_len = auth_end_index - offs;
-                m_auth.assign(raw.substr(offs, auth_len));
-                offs += auth_len + 1;
-            }
+        const std::string& getHost() const { return m_host; }
 
-            // host
-            std::size_t host_end_index = raw.find("/", offs);
-            std::size_t port_index = raw.find(":", offs);
-            bool has_port = port_index != std::string::npos;
+        const std::string& getProtocol() const { return m_protocol; }
 
-            if (has_port) {
-                
-                std::size_t host_len = port_index - offs;
-                m_host.assign(raw.substr(offs, host_len));
+        const bool hasAuth() const { return !m_auth.empty(); }
 
-                std::string str_port;
-                if (host_end_index == std::string::npos) {
-                    std::size_t port_len = raw.length() - port_index;
-                    str_port.assign(raw.substr(port_index + 1, port_len));
-                } else {
-                    std::size_t port_len = host_end_index - port_index;
-                    str_port.assign(raw.substr(port_index + 1, port_len));
-                }
+        const std::string& getAuth() const { return m_auth; }
 
-                const char *c_mport = str_port.c_str();
-                m_port = strtol(c_mport, nullptr, 10); // std::stoi(str_port);
-            } else {
-                m_port = default_port;
-                
-                if (host_end_index == std::string::npos) {
-                    m_host.assign(std::string(raw.c_str() + offs));
-                }
-                else {
-                    std::size_t host_len = host_end_index - offs;
-                    m_host.assign(raw.substr(offs, host_len));
-                }
-            }
-
-            if (host_end_index == std::string::npos) {
-                m_path.assign("/");
-            } else {
-                m_path.assign(raw.substr(host_end_index, raw.length()));
-            }
-        }
-
-        int GetPort() const { return m_port; }
-
-        const std::string& GetPath() const { return m_path; }
-
-        const std::string& GetHost() const { return m_host; }
-
-        const std::string& GetProtocol() const { return m_protocol; }
-
-        const bool HasAuth() const { return !m_auth.empty(); }
-
-        const std::string& GetAuth() const { return m_auth; }
-
-        const std::map<std::string, std::string>& GetQueries() const { return m_queries; }
+        const std::map<std::string, std::string>& getQueries() const { return m_queries; }
 
     private:
         int m_port;

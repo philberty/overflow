@@ -28,23 +28,23 @@
 
 #include <vector>
 
-namespace Overflow {
-
-    class DescribeResponse: public RtspResponse {
+namespace Overflow
+{
+    class DescribeResponse: public RtspResponse
+    {
     public:
         DescribeResponse(const Response* resp)
             : RtspResponse(resp),
-              sessionDescriptions(SessionDescriptionFactory::ParseSessionDescriptionsFromBuffer(GetBodyString()))
-            { }
+              sessionDescriptions(SessionDescriptionFactory::parseSessionDescriptions(getBodyString()))
+        { }
 
-        const std::vector<SessionDescription>& GetSessionDescriptions() const { return sessionDescriptions; }
+        const std::vector<SessionDescription>& getSessionDescriptions() const { return sessionDescriptions; }
 
-        const bool Ok() const override { return GetCode() == 200 && sessionDescriptions.size() > 0; }
+        const bool ok() const override { return getCode() == 200 && sessionDescriptions.size() > 0; }
 
     private:
         std::vector<SessionDescription> sessionDescriptions;
     };
-
 };
 
 #endif //__DESCRIBE_RESPONSE_H__

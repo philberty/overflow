@@ -26,18 +26,16 @@
 #include "Rtsp.h"
 
 
-namespace Overflow {
-
+namespace Overflow
+{
     class Teardown: public Rtsp {
     public:
-
         Teardown(const std::string& path, int seqNum, const std::string& session)
             : Rtsp("TEARDOWN", path, seqNum)
         {
-            AddHeader("Session", session);
+            addHeader("Session", session);
         }
     };
-    
 };
 
 #endif //__TEARDOWN_REQUEST_H__

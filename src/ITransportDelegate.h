@@ -24,17 +24,35 @@
 
 #include "RtpPacket.h"
 
-namespace Overflow {
-    class ITransportDelegate {
+
+namespace Overflow
+{
+    typedef enum
+    {
+        CONNECTED,
+        DISCONNECTED,
+        CONNECTING,
+        ERROR
+    } TransportState;
+
+    typedef enum
+    {
+        SOCKET_ERROR,
+        UNKNOWN,
+        OK
+    } TransportErrorReason;
+    
+    class ITransportDelegate
+    {
     public:
+        virtual void onRtpPacket(const RtpPacket* packet) = 0;
 
-        virtual void OnRtpPacket(const RtpPacket* packet) = 0;
+        // TODO: not implemented
+        // virtual void onRtcpPacket(const RtcpPackate* packet) = 0;
 
-        virtual void OnAnnounce() = 0;
-
-        virtual void OnRedirect() = 0;
+        virtual void onStateChange(TransportState state) = 0;
         
-        virtual void OnSocketWriteError() = 0;
+        virtual void onTransportError(TransportErrorReason reason) = 0;
     };
 };
 

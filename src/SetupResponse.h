@@ -23,9 +23,7 @@
 #define __SETUP_RESPONSE_H__
 
 #include "RtspResponse.h"
-#include "Helpers.h"
 
-#include <cstdlib>
 
 namespace Overflow {
     
@@ -83,23 +81,22 @@ namespace Overflow {
             }
         }
         
-        int GetRtpInterleavedChannel() const { return m_rtpInterleavedChannel; }
+        int getRtpInterleavedChannel() const { return m_rtpInterleavedChannel; }
         
-        int GetRtcpInterleavedChannel() const { return m_rtcpInterleavedChannel; }
+        int getRtcpInterleavedChannel() const { return m_rtcpInterleavedChannel; }
         
-        const std::string GetSession() const { return m_session; }
+        const std::string getSession() const { return m_session; }
         
-        int GetTimeoutSeconds() const { return m_timeout; }
+        int getTimeoutSeconds() const { return m_timeout; }
         
-        bool IsInterleaved() const { return m_isInterleaved; }
+        bool isInterleaved() const { return m_isInterleaved; }
         
-    private:
-        
-        bool m_isInterleaved;
-        int m_rtpInterleavedChannel;
-        int m_rtcpInterleavedChannel;
-        std::string m_session;
-        int m_timeout;
+    private:       
+        bool mIsInterleaved;
+        int mRtpInterleavedChannel;
+        int mRtcpInterleavedChannel;
+        std::string mSession;
+        int mTimeout;
     };
 
 };

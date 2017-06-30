@@ -23,134 +23,38 @@
 #define __RTSP_RESPONSE_H__
 
 #include "Response.h"
-#include "Helpers.h"
 
-#include <string>
-#include <map>
-#include <cstdio>
-
-#include <sstream>
-  using std::ostringstream;
-
-#include <stdexcept>
-  using std::runtime_error;
 
 namespace Overflow {
 
     class RtspResponse {
     public:
-        RtspResponse(const Response* resp)
-            : RtspResponse(resp->BytesPointer(), resp->PointerLength())
-        {
-        }
+        RtspResponse(const Response* resp);
 
-        RtspResponse(const unsigned char *buffer, const size_t length) : m_code(500), m_body(), m_headers()
-        {
-            // pair is offset and length delimiter inclusive
-            std::vector<std::pair<int,int>> *lines = Helper::SplitBufferByDelimiter(buffer, length, "\r\n");
+        RtspResponse(const unsigned char *buffer, const size_t length);
 
-            // if null or empty
-            if (lines == nullptr or lines->size() == 0) {
-                ostringstream message;
-                message << "Invalid RTSP Response no headers";
-                throw runtime_error{ message.str() };
-            }
+        RtspResponse(int code, std::string body);
 
-            const std::pair<int,int>& status_line_offset = lines->at(0);
-            const unsigned char *status_line_buffer = buffer + status_line_offset.first;
-            const size_t status_line_length = status_line_offset.second;
+        virtual ~RtspResponse();
 
-            std::vector<std::pair<int,int>>* status_line_tokens = Helper::SplitBufferByDelimiter(
-                status_line_buffer, status_line_length,
-                " "
-                );
+        const int getCode() const { return mCode; }
 
-            if (status_line_tokens->size() < 3) {
-                ostringstream message;
-                message << "Invalid RTSP Response - not enough status tokens";
-                throw runtime_error{ message.str() };
-            }
+        const std::string getBodyString() const { return mBody; }
 
-            std::pair<int,int>& protocol = status_line_tokens->at(0);
-            
-            // -1 as this buffer split table includes the delim length
-            bool protocol_matches = memcmp(buffer+protocol.first, "RTSP/1.0", protocol.second - 1) == 0;
-            if (not protocol_matches) {
-                ostringstream message;
-                message << "Invalid RTSP Response - invalid protocol for rtsp response";
-                throw runtime_error{ message.str() };
-            }
+        const unsigned char *getBody() const { return (unsigned char*)mBody.c_str(); }
 
-            std::pair<int,int>& status_code_token = status_line_tokens->at(1);
+        size_t getBodyLength() const { return getBodyString().length(); }
 
-            const char *begin = (const char *)buffer + status_code_token.first;
-            m_code = atoi(begin);
+        const std::map<std::string, std::string> getHeaders() const { return mHeaders; }
 
-            bool is_body = false;
-            for (auto it = lines->begin() + 1; it != lines->end(); ++it) {
+        virtual const bool ok() const { return getCode() == 200; }
 
-                const std::pair<int,int>& current_line_token = *it;
-
-                void *line_buffer = alloca(current_line_token.second - 1);
-                memset(line_buffer, 0, current_line_token.second - 1);
-                memcpy(line_buffer, buffer + current_line_token.first, current_line_token.second - 2);
-                
-                std::string current_line((const char *)line_buffer);
-                
-                if (!is_body && current_line.empty()) {
-                    is_body = true;
-                    continue;
-                }
-
-                if (is_body && !current_line.empty()) {
-                    m_body += current_line + "\r\n";
-                }
-                else if (!is_body && !current_line.empty()) {
-                    size_t pos = current_line.find(':');
-                    std::string key = current_line.substr(0, pos);
-                    std::string value = current_line.substr(pos + 2, current_line.length());
-
-                    m_headers.insert(std::pair<std::string, std::string>(key, value));
-                }
-            }
-            
-            delete status_line_tokens;
-            delete lines;
-        }
-
-        RtspResponse(int code, std::string body): m_code(code), m_body(body), m_headers() {}
-
-        virtual ~RtspResponse() { }
-
-        const int GetCode() const { return m_code; }
-
-        const std::string GetBodyString() const { return m_body; }
-
-        const unsigned char *GetBody() const { return (unsigned char*)m_body.c_str(); }
-
-        size_t GetBodyLength() const { return GetBodyString().length(); }
-
-        const std::map<std::string, std::string> GetHeaders() const { return m_headers; }
-
-        virtual const bool Ok() const { return GetCode() == 200; }
-
-        const std::string HeaderValueForKey(const std::string& key) {
-            std::string header_value;
-
-            const std::map<std::string, std::string> headers = GetHeaders();
-            auto search = headers.find(key);
-            
-            if (search != headers.end()) {
-                header_value = search->second;
-            }
-            
-            return header_value;
-        }
+        const std::string headerValueForKey(const std::string& key);
         
     private:
-        int m_code;
-        std::string m_body;
-        std::map<std::string, std::string> m_headers;
+        int mCode;
+        std::string mBody;
+        std::map<std::string, std::string> mHeaders;
     };
     
 };

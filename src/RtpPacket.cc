@@ -109,3 +109,16 @@ Overflow::RtpPacket::RtpPacket(const unsigned char *buffer, uint16_t length): m_
     m_payload = (unsigned char *)malloc(m_payloadLength);
     memcpy(m_payload, buffer + payload_offset, m_payloadLength);
 }
+
+Overflow::RtpPacket::RtpPacket(const Response* response)
+    : RtpPacket(response->BytesPointer(), response->PointerLength())
+{
+}
+
+Overflow::RtpPacket::~RtpPacket()
+{
+    if (HasExtension())
+        free(m_extension);
+    
+    free(m_payload);
+}

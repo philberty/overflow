@@ -23,65 +23,30 @@
 #define __RESPONSE_H__
 
 #include <string>
-#include <cstdlib>
-#include <cstring>
 
 
-namespace Overflow {
-
-    class Response {
+namespace Overflow
+{
+    class Response
+    {
     public:
-        Response(const unsigned char *buffer, size_t length): m_length(length)
-        {
-            unsigned char *copy = (unsigned char*)malloc(length);
-            memcpy((void*)copy, (const void *)buffer, length);
-            m_buffer = copy;
-        }
+        Response(const unsigned char *buffer, size_t length);
 
-        Response(const Response& other)
-        {
-            const unsigned char* buffer = other.BytesPointer();
-            size_t length = other.PointerLength();
-            m_length = length;
+        ~Response();
 
-            unsigned char *copy = (unsigned char*)malloc(length);
-            memcpy((void*)copy, (const void *)buffer, length);
-            m_buffer = copy;
-        }
+        const unsigned char* getBytesPointer() const;
 
-        ~Response()
-        {
-            free(m_buffer);
-        }
+        const size_t getPointerLength() const;
 
-        const unsigned char *BytesPointer() const { return m_buffer; }
+        bool isInterleavedPacket() const;
 
-        const size_t PointerLength() const { return m_length; }
+        int getInterleavedPacketChannelNumber() const;
 
-        bool IsInterleavedPacket() const { return m_buffer[0] == '$'; }
-
-        int GetInterleavedPacketChannelNumber() {
-            if (!IsInterleavedPacket()) {
-                return -1;
-            }
-            unsigned char channel_number = m_buffer[1];
-            return static_cast<int>(channel_number);
-        }
-
-        std::string GetStringBuffer() const {
-            std::string buf;
-
-            const unsigned char * buffer = BytesPointer();
-            for (size_t i = 0; i < PointerLength(); ++i) {
-                buf += buffer[i];
-            }
-            
-            return buf;
-        }
+        std::string getStringBuffer() const;
 
     private:
-        unsigned char *m_buffer;
-        size_t m_length;
+        unsigned char *mBuffer;
+        size_t mLength;
     };
 };
 

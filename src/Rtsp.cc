@@ -1,4 +1,3 @@
-// -*-c++-*-
 // Copyright (c) 2017 Philip Herron.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,41 +18,59 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-
-#ifndef __RTSP_H__
-#define __RTSP_H__
-
-#include "ByteBuffer.h"
-
-#include <string>
-#include <map>
+#include "Rtsp.h"
+#include "Helpers.h"
 
 
-namespace Overflow
+Overflow::Rtsp::Rtsp(const std::string& method,
+                     const std::string& path,
+                     int seqNum)
+    : mMethod(method),
+      mPath(path)
 {
-    class Rtsp
-    {
-    public:
-        Rtsp(const std::string& method, const std::string& path, int seqNum);
+    addHeader("CSeq", Helper::numberToString(seqNum));
+}
 
-        const ByteBuffer& getBuffer();
-
-        void addAuth(const std::string& encoded);
-
-        const std::string& getMethod() const;
-
-        std::string toString();
-
-    protected:
-        void addHeader(const std::string& key, const std::string& value);
-
-    private:
-        std::map<std::string, std::string> mHeaders;
-        std::string mMethod;
-        std::string mPath;
-        ByteBuffer mBuffer;
-    };
+const ByteBuffer&
+Overflow::Rtsp::getBuffer()
+{
+    mBuffer.reset();
     
-};
+    mBuffer.append(m_method + " " + m_path + " RTSP/1.0\r\n");
+    for (auto it = mHeaders.begin(); it != mHeaders.end(); ++it) {
+        mBuffer.append(it->first + ": " + it->second + "\r\n");
+    }
+    mBuffer.append("\r\n\r\n");
+    
+    // TODO:
+    // add content
+    
+    return mBuffer;
+}
 
-#endif //__RTSP_H__
+void
+Overflow::Rtsp::addAuth(const std::string& encoded)
+{
+    addHeader("Authorization", "Basic " + encoded);
+}
+
+const std::string&
+Overflow::Rtsp::getMethod()
+{
+    return mMethod;
+}
+
+std::string
+Overflow::Rtsp::toString()
+{
+    std::string buf;
+    buf += m_method + ":" + m_path;
+    return buf;    
+}
+
+void
+Overflow::Rtsp::addHeader(const std::string& key,
+                          const std::string& value)
+{
+    mHeaders.insert(std::pair<std::string,std::string>(key, value));
+}

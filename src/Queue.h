@@ -20,40 +20,27 @@
 // THE SOFTWARE.
 
 
-#ifndef __RTSP_H__
-#define __RTSP_H__
-
-#include "ByteBuffer.h"
-
-#include <string>
-#include <map>
+#include <blockingconcurrentqueue.h>
 
 
 namespace Overflow
 {
-    class Rtsp
+    template <class T> class Queue
     {
     public:
-        Rtsp(const std::string& method, const std::string& path, int seqNum);
+        Queue() { }
 
-        const ByteBuffer& getBuffer();
+        void enqueue(T item)
+        {
+            mQueue.enqueue(item);
+        }
 
-        void addAuth(const std::string& encoded);
-
-        const std::string& getMethod() const;
-
-        std::string toString();
-
-    protected:
-        void addHeader(const std::string& key, const std::string& value);
-
+        bool wait(T& item, int64_t timeout_usecs)
+        {
+            return mQueue.wait_dequeue_timed(item, timeout_usecs);
+        }
+        
     private:
-        std::map<std::string, std::string> mHeaders;
-        std::string mMethod;
-        std::string mPath;
-        ByteBuffer mBuffer;
+        moodycamel::BlockingConcurrentQueue<T> mQueue;
     };
-    
 };
-
-#endif //__RTSP_H__

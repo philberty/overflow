@@ -25,17 +25,18 @@
 
 #include "Rtsp.h"
 
-namespace Overflow {
 
-    class Setup: public Rtsp {
+namespace Overflow
+{
+    class Setup: public Rtsp
+    {
     public:
         Setup(const std::string& path, int seqNum, const std::string& transport)
-            : Rtsp("SETUP", path, seqNum) {
-
-            AddHeader("Transport", transport);
+            : Rtsp("SETUP", path, seqNum)
+        {
+            addHeader("Transport", transport);
         }
     };
-    
 };
 
 #endif //__SETUP_REQUEST_H__

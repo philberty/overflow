@@ -1,4 +1,3 @@
-// -*-c++-*-
 // Copyright (c) 2017 Philip Herron.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,41 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-
-#ifndef __RTSP_H__
-#define __RTSP_H__
-
-#include "ByteBuffer.h"
-
-#include <string>
-#include <map>
+#include "SessionDescriptionV0.h"
+#include "Helpers.h"
 
 
-namespace Overflow
+Overflow::SessionDescriptionV0::SessionDescriptionV0(const std::string& rawSessionDescription)
+    : SessionDescription()
 {
-    class Rtsp
-    {
-    public:
-        Rtsp(const std::string& method, const std::string& path, int seqNum);
-
-        const ByteBuffer& getBuffer();
-
-        void addAuth(const std::string& encoded);
-
-        const std::string& getMethod() const;
-
-        std::string toString();
-
-    protected:
-        void addHeader(const std::string& key, const std::string& value);
-
-    private:
-        std::map<std::string, std::string> mHeaders;
-        std::string mMethod;
-        std::string mPath;
-        ByteBuffer mBuffer;
-    };
+    std::vector<std::string> lines = Helper::stringSplit(rawSessionDescription, "\r\n");
     
-};
-
-#endif //__RTSP_H__
+    for (auto it = lines.begin(); it != lines.end(); ++it)
+    {
+        const std::string current_line = *it;
+        
+        bool is_rtpmap = current_line.find("a=rtpmap") != std::string::npos;
+        bool is_fmtp = current_line.find("a=fmtp") != std::string::npos;
+        bool is_control = current_line.find("a=control") != std::string::npos;
+        bool is_mime = is_rtpmap;
+        
+        if (is_rtpmap)
+        {
+            mRtpMap = current_line;
+        }
+        
+        if (is_fmtp)
+        {
+            mFmtp = current_line;
+        }
+        
+        if (is_control)
+        {
+            size_t end_position = current_line.find(';');
+            mControl = current_line.substr(10, end_position - 10);
+        }
+        
+        if (is_mime)
+        {
+            mType = getTypeFromMime(current_line);
+        }
+    }
+}

@@ -26,21 +26,20 @@
 #include "Rtsp.h"
 
 
-namespace Overflow {
-
-    class Describe: public Rtsp {
+namespace Overflow
+{
+    class Describe: public Rtsp
+    {
     public:
-
         Describe(const std::string& path, int seqNum, bool isLive)
             : Rtsp("DESCRIBE", path, seqNum)
         {
-            AddHeader("Accept", "application/sdp");
+            addHeader("Accept", "application/sdp");
             if (isLive) {
-                AddHeader("Range", "ntp=now-");
+                addHeader("Range", "ntp=now-");
             }
         }
     };
-    
 };
 
 #endif //__DESCRIBE_REQUEST_H__

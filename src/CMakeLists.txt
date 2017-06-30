@@ -86,10 +86,19 @@ set(OVERFLOW_HEADERS
 add_library(overflow 
   RtspWanClient.cc
   InterleavedTcpTransport.cc
+  Response.cc
+  RtspResponse.cc
+  RtspFactory.cc
+  Url.cc
+  RtpPacket.cc
+  Helpers.cc
+  ByteBuffer.cc
+  SessionDescriptionFactory.cc
+  SessionDescriptionV0.cc
+  SetupResponse.cc
   H264Depacketizer.cc
   MP4VDepacketizer.cc
   MJPEGDepacketizer.cc
-  RtpPacket.cc
 
   ${OVERFLOW_HEADERS}
   ${JNI_SOURCES}

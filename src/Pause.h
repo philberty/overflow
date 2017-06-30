@@ -26,18 +26,17 @@
 #include "Rtsp.h"
 
 
-namespace Overflow {
-
-    class Pause: public Rtsp {
+namespace Overflow
+{
+    class Pause: public Rtsp
+    {
     public:
-
         Pause(const std::string& path, int seqNum, const std::string& session)
             : Rtsp("PAUSE", path, seqNum)
         {
-            AddHeader("Session", session);
+            addHeader("Session", session);
         }
     };
-    
 };
 
 #endif //__PAUSE_REQUEST_H__
