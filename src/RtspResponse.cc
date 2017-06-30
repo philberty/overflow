@@ -25,6 +25,7 @@
 #include <string>
 #include <map>
 #include <cstdio>
+#include <cstring>
 #include <sstream>
 #include <stdexcept>
 
@@ -38,11 +39,11 @@ Overflow::RtspResponse::RtspResponse(const unsigned char* buffer,
         Helper::splitBuffer(buffer, length, "\r\n");
     
     // if null or empty
-    if (lines == nullptr or lines->size() == 0)
+    if (lines.size() == 0)
     {
         std::ostringstream message;
         message << "Invalid RTSP Response no headers";
-        throw runtime_error{message.str()};
+        throw std::runtime_error(message.str());
     }
     
     const std::pair<int,int>& status_line_offset = lines[0];
@@ -50,13 +51,14 @@ Overflow::RtspResponse::RtspResponse(const unsigned char* buffer,
     const size_t status_line_length = status_line_offset.second;
     
     std::vector<std::pair<int,int>> status_line_tokens =
-        Helper::SplitBufferByDelimiter(
-            status_line_buffer, status_line_length, " ");
+        Helper::splitBuffer(status_line_buffer,
+                            status_line_length,
+                            " ");
     
     if (status_line_tokens.size() < 3) {
-        ostringstream message;
+        std::ostringstream message;
         message << "Invalid RTSP Response - not enough status tokens";
-        throw runtime_error{ message.str() };
+        throw std::runtime_error{ message.str() };
     }
     
     std::pair<int,int>& protocol = status_line_tokens[0];
@@ -64,19 +66,19 @@ Overflow::RtspResponse::RtspResponse(const unsigned char* buffer,
     // -1 as this buffer split table includes the delim length
     bool protocol_matches = memcmp(buffer+protocol.first, "RTSP/1.0", protocol.second - 1) == 0;
     if (not protocol_matches) {
-        ostringstream message;
+        std::ostringstream message;
         message << "Invalid RTSP Response - invalid protocol for rtsp response";
-        throw runtime_error{ message.str() };
+        throw std::runtime_error{ message.str() };
     }
 
     std::pair<int,int>& status_code_token = status_line_tokens[1];
 
     const char *begin = (const char *)buffer + status_code_token.first;
-    m_code = atoi(begin);
+    mCode = atoi(begin);
 
     bool is_body = false;
-    for (auto it = lines.begin() + 1; it != lines.end(); ++it) {
-
+    for (auto it = lines.begin() + 1; it != lines.end(); ++it)
+    {
         const std::pair<int,int>& current_line_token = *it;
 
         void *line_buffer = alloca(current_line_token.second - 1);
@@ -90,22 +92,24 @@ Overflow::RtspResponse::RtspResponse(const unsigned char* buffer,
             continue;
         }
 
-        if (is_body && !current_line.empty()) {
-            m_body += current_line + "\r\n";
+        if (is_body && !current_line.empty())
+        {
+            mBody += current_line + "\r\n";
         }
-        else if (!is_body && !current_line.empty()) {
+        else if (!is_body && !current_line.empty())
+        {
             size_t pos = current_line.find(':');
             std::string key = current_line.substr(0, pos);
             std::string value = current_line.substr(pos + 2, current_line.length());
 
-            m_headers.insert(std::pair<std::string, std::string>(key, value));
+            mHeaders.insert(std::pair<std::string, std::string>(key, value));
         }
     }
 }
 
 
 Overflow::RtspResponse::RtspResponse(const Response* resp)
-    : RtspResponse(resp->BytesPointer(), resp->PointerLength())
+    : RtspResponse(resp->bytesPointer(), resp->length())
 {
 }
 
@@ -124,7 +128,7 @@ Overflow::RtspResponse::headerValueForKey(const std::string& key)
 {
     std::string header_value;
     
-    const std::map<std::string, std::string> headers = GetHeaders();
+    const std::map<std::string, std::string> headers = getHeaders();
     auto search = headers.find(key);
     
     if (search != headers.end()) {

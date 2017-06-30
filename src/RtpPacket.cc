@@ -22,11 +22,10 @@
 # include "Config.h"
 #endif
 
-#include <glog/logging.h>
-
 #include "RtpPacket.h"
 
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <stdexcept>
 
@@ -62,22 +61,26 @@ struct _RTPExtensionHeader {
     uint16_t length;
 } __attribute__((packed)) ;
 
-Overflow::RtpPacket::RtpPacket(const unsigned char *buffer, uint16_t length): m_timestmap(0),
-                                                                              m_extensionID(-1),
-                                                                              m_extension(nullptr),
-                                                                              m_extensionLength(0),
-                                                                              m_payload(nullptr),
-                                                                              m_payloadLength(0) {
+Overflow::RtpPacket::RtpPacket(const unsigned char *buffer,
+                               uint16_t length)
+    : mTimestmap(0),
+      mExtensionID(-1),
+      mExtension(nullptr),
+      mExtensionLength(0),
+      mPayload(nullptr),
+      mPayloadLength(0)
+{
     struct _RTPHeader *header = (struct _RTPHeader*)buffer;
-    m_version = static_cast<int>(header->version);
-    m_sequenceNumber = ntohs(header->sequencenumber);
-    m_type = static_cast<int>(header->payloadtype);
-    m_marker = header->marker == 0 ? false : true;
-    m_timestmap = ntohl(header->timestamp);
+    mVersion = static_cast<int>(header->version);
+    mSequenceNumber = ntohs(header->sequencenumber);
+    mType = static_cast<int>(header->payloadtype);
+    mMarker = header->marker == 0 ? false : true;
+    mTimestmap = ntohl(header->timestamp);
 
-    if (m_version != 2) {
+    if (mVersion != 2)
+    {
         std::ostringstream message;
-        message << "Invalid RTP packet version: " << m_version;
+        message << "Invalid RTP packet version: " << mVersion;
         throw std::runtime_error(message.str());
     }
 
@@ -90,35 +93,35 @@ Overflow::RtpPacket::RtpPacket(const unsigned char *buffer, uint16_t length): m_
         memset(&extension_header, 0, sizeof(struct _RTPExtensionHeader));
         memcpy(&extension_header, buffer + extension_header_offset, sizeof(struct _RTPExtensionHeader));
         
-        m_extensionID = ntohs(extension_header.extid);
-        m_extensionLength = (sizeof(uint32_t) * ntohs(extension_header.length));
+        mExtensionID = ntohs(extension_header.extid);
+        mExtensionLength = (sizeof(uint32_t) * ntohs(extension_header.length));
 
-        m_extension = (unsigned char*)malloc(m_extensionLength);
-        memset(m_extension, 0, m_extensionLength);
+        mExtension = (unsigned char*)malloc(mExtensionLength);
+        memset(mExtension, 0, mExtensionLength);
         
         const unsigned char *extension_data_pointer = buffer
             + payload_offset
             + sizeof(struct _RTPExtensionHeader);
-        memcpy(m_extension, extension_data_pointer, m_extensionLength);
+        memcpy(mExtension, extension_data_pointer, mExtensionLength);
         
-        payload_offset += sizeof(struct _RTPExtensionHeader) + m_extensionLength;
+        payload_offset += sizeof(struct _RTPExtensionHeader) + mExtensionLength;
     }
     
-    m_payloadLength = length - payload_offset;
+    mPayloadLength = length - payload_offset;
     
-    m_payload = (unsigned char *)malloc(m_payloadLength);
-    memcpy(m_payload, buffer + payload_offset, m_payloadLength);
+    mPayload = (unsigned char *)malloc(mPayloadLength);
+    memcpy(mPayload, buffer + payload_offset, mPayloadLength);
 }
 
 Overflow::RtpPacket::RtpPacket(const Response* response)
-    : RtpPacket(response->BytesPointer(), response->PointerLength())
+    : RtpPacket(response->bytesPointer(), response->length())
 {
 }
 
 Overflow::RtpPacket::~RtpPacket()
 {
-    if (HasExtension())
-        free(m_extension);
+    if (hasExtension())
+        free(mExtension);
     
-    free(m_payload);
+    free(mPayload);
 }

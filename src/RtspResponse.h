@@ -24,6 +24,9 @@
 
 #include "Response.h"
 
+#include <map>
+#include <string>
+
 
 namespace Overflow {
 

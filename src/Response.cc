@@ -40,7 +40,7 @@ Overflow::Response::~Response()
 }
 
 bool
-Overflow::Response::isInterleavedPacket()
+Overflow::Response::isInterleavedPacket() const
 {
     if (mLength > 0) {
         return mBuffer[0] == '$';
@@ -50,50 +50,37 @@ Overflow::Response::isInterleavedPacket()
 }
 
 const unsigned char*
-Overflow::Response::getBytesPointer()
+Overflow::Response::bytesPointer() const
 {
     return mBuffer;
 }
 
 const size_t
-Overflow::Response::getPointerLength()
+Overflow::Response::length() const
 {
     return mLength;
 }
 
 int
-Overflow::Response::getInterleavedPacketChannelNumber()
+Overflow::Response::getInterleavedPacketChannelNumber() const
 {
     if (not isInterleavedPacket()) {
         return -1;
     }
     
-    unsigned char channel_number = m_buffer[1];
+    unsigned char channel_number = mBuffer[1];
     return static_cast<int>(channel_number);
 }
 
 std::string
-Overflow::Response::getStringBuffer()
+Overflow::Response::getStringBuffer() const
 {
     std::string buf;
     
-    const unsigned char * buffer = getBytesPointer();
-    for (size_t i = 0; i < getPointerLength(); ++i) {
+    const unsigned char * buffer = bytesPointer();
+    for (size_t i = 0; i < length(); ++i) {
         buf += buffer[i];
     }
             
     return buf;
 }
-
-// Lets avoid copy constructors for performance reasons
-
-// Overflow::Response::Response(const Response& other)
-// {
-//     const unsigned char* buffer = other.BytesPointer();
-//     size_t length = other.PointerLength();
-//     m_length = length;
-    
-//     unsigned char *copy = (unsigned char*)malloc(length);
-//     memcpy((void*)copy, (const void *)buffer, length);
-//     m_buffer = copy;
-// }

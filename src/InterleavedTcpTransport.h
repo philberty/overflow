@@ -25,13 +25,15 @@
 #include "ITransportDelegate.h"
 #include "Transport.h"
 
+#include <functional>
+
 #include <uvpp/loop.hpp>
 #include <uvpp/tcp.hpp>
 
 
 namespace Overflow
 {
-    class InterleavedTcpTransport : public Transport
+    class InterleavedTcpTransport: public Transport
     {
     public:
         InterleavedTcpTransport(ITransportDelegate * const delegate,
@@ -51,9 +53,7 @@ namespace Overflow
         void shutdown() override;
 
     private:
-        void readCallback(const char* buf, ssize_t len);
-
-        size_t readResponse(const std::vector<unsigned char>& response);
+        size_t readResponse(const unsigned char* buffer, size_t length);
 
         uvpp::Tcp mTcp;
         std::string mHost;

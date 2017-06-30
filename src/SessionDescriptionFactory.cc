@@ -18,17 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include "SessionDescription.h"
 #include "SessionDescriptionV0.h"
 #include "Helpers.h"
 
 #include <glog/logging.h>
 
 
-std::vector<SessionDescription>
+static std::vector<Overflow::SessionDescription>
 Overflow::SessionDescriptionFactory::parseSessionDescriptions(const std::string& body)
 {
-    std::vector<SessionDescription> palettes;
-    std::vector<std::string> lines = Helper::stringSplit(body, "\n");
+    std::vector<Overflow::SessionDescription> palettes;
+    std::vector<std::string> lines = Overflow::Helper::stringSplit(body, "\n");
     
     if (lines.size() > 0)
     {
@@ -36,7 +37,7 @@ Overflow::SessionDescriptionFactory::parseSessionDescriptions(const std::string&
         
         if (version_line.find("v=0") != std::string::npos)
         {
-            SessionDescriptionV0 session(body);
+            Overflow::SessionDescriptionV0 session(body);
             palettes.push_back(session);
         }
         else if (!version_line.empty())

@@ -48,15 +48,15 @@ namespace Overflow
         void insert(const std::string& bytes,
                     const size_t offs);
 
-        const unsigned char * getBytesPointer() const;
+        const unsigned char * bytesPointer() const;
 
         const size_t length() const;
 
         void reset();
 
     private:
-        unsigned char *m_bytes;
-        size_t m_length;
+        unsigned char *mBytes;
+        size_t mLength;
     };
     
 };

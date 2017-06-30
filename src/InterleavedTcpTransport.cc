@@ -31,25 +31,24 @@ Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * 
                                                            uvpp::loop& loop,
                                                            const std::string& url)
     : Transport(delegate), 
-      mLoop(loop),
-      mTcp(loop)
+      mTcp(loop),
       mRtpInterleavedChannel(0),
       mRtcpInterleavedChannel(1)
 {
-    Url uri(url);
+    Url uri(url, 554);
     mHost = uri.getHost();
     mPort = uri.getPort();
 }
 
 std::string
-Overflow::InterleavedTcpTransport::getTransportHeaderString()
+Overflow::InterleavedTcpTransport::getTransportHeaderString() const
 {
     char rtp_channel[12];
     char rtcp_channel[12];
     memset(rtp_channel, 0, sizeof(rtp_channel));
     memset(rtcp_channel, 0, sizeof(rtcp_channel));
-    snprintf(rtp_channel, sizeof(rtp_channel), "%d", m_rtpInterleavedChannel);
-    snprintf(rtcp_channel, sizeof(rtcp_channel), "%d", m_rtcpInterleavedChannel);
+    snprintf(rtp_channel, sizeof(rtp_channel), "%d", mRtpInterleavedChannel);
+    snprintf(rtcp_channel, sizeof(rtcp_channel), "%d", mRtcpInterleavedChannel);
     
     return "RTP/AVP/TCP;unicast;interleaved="
         + std::string(rtp_channel)
@@ -95,44 +94,21 @@ Overflow::InterleavedTcpTransport::connect()
     auto connection_handler = [&](const uvpp::error& error) {
         if (error)
         {
-            LOG(INFO) << "failed to connect: tcp://" << m_host << ":" << m_port;
+            LOG(INFO) << "failed to connect: tcp://" << mHost << ":" << mPort;
             onError(UNKNOWN);
             return;
         }
         
-        LOG(INFO) << "Connected: tcp://" << m_host << ":" << m_port;
-        mTcp.read_start(readCallback);
+        LOG(INFO) << "Connected: tcp://" << mHost << ":" << mPort;
+        // mTcp.read_start(readCallback);
     };
 
     return mTcp.connect(mHost, mPort, connection_handler);
 }
 
-void
-Overflow::InterleavedTcpTransport::readCallback(const char* buf,
-                                                ssize_t len)
-{
-    std::vector<unsigned char> response;
-            
-    if (mReceivedBuffer.size() > 0) {
-        // copy trailing data into response
-        response.resize(m_receivedBuffer.size());
-        std::copy(mReceivedBuffer.begin(), mReceivedBuffer.end(), response.begin());
-        mReceivedBuffer.clear();
-        mReceivedBuffer.resize(0);
-    }
-            
-    size_t response_offset = response.size();
-    size_t total_buffer_size = response_offset + len;
-    response.resize(total_buffer_size);
-    std::copy(buf, buf + len, response.begin() + response_offset);
-            
-    size_t read_size = readResponse(response);
-
-    // TODO
-}
-
 size_t
-Overflow::InterleavedTcpTransport::readResponse(const std::vector<unsigned char>& response)
+Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
+                                                size_t length)
 {
     return 0;
 }

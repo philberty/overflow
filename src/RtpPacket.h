@@ -37,41 +37,41 @@ namespace Overflow {
 
         ~RtpPacket();
 
-        int GetVersion() const { return m_version; }
+        int getVersion() const { return mVersion; }
 
-        int GetSequenceNumber() const { return m_sequenceNumber; }
+        int getSequenceNumber() const { return mSequenceNumber; }
 
-        int GetType() const { return m_type; }
+        int getType() const { return mType; }
 
-        bool IsMarked() const { return m_marker; }
+        bool isMarked() const { return mMarker; }
 
-        bool HasExtension() const { return m_extension != nullptr; }
+        bool hasExtension() const { return mExtension != nullptr; }
 
-        int GetExtensionID() const { return m_extensionID; }
+        int getExtensionID() const { return mExtensionID; }
 
-        const unsigned char * GetExtensionData() const { return m_extension; }
+        const unsigned char * getExtensionData() const { return mExtension; }
 
-        size_t GetExtensionLength() const { return m_extensionLength; }
+        size_t getExtensionLength() const { return mExtensionLength; }
 
-        bool HasPayload() const { return m_payload != nullptr; }
+        bool hasPayload() const { return mPayload != nullptr; }
 
-        const unsigned char * PayloadData() const { return m_payload; }
+        const unsigned char * payloadData() const { return mPayload; }
 
-        size_t PayloadLength() const { return m_payloadLength; }
+        size_t payloadLength() const { return mPayloadLength; }
 
-        uint32_t GetTimestamp() const { return m_timestmap; }
+        uint32_t getTimestamp() const { return mTimestmap; }
 
     private:
-        uint32_t m_timestmap;
-        int m_version;
-        int m_sequenceNumber;
-        int m_type;
-        bool m_marker;
-        int m_extensionID;
-        unsigned char *m_extension;
-        size_t m_extensionLength;
-        unsigned char *m_payload;
-        size_t m_payloadLength;
+        uint32_t mTimestmap;
+        int mVersion;
+        int mSequenceNumber;
+        int mType;
+        bool mMarker;
+        int mExtensionID;
+        unsigned char *mExtension;
+        size_t mExtensionLength;
+        unsigned char *mPayload;
+        size_t mPayloadLength;
     };
     
 };

@@ -22,131 +22,47 @@
 #ifndef __RTSP_WAN_CLIENT_H__
 #define __RTSP_WAN_CLIENT_H__
 
-#include <functional>
-
 #include "IRtspDelegate.h"
 #include "ITransportDelegate.h"
+#include "Transport.h"
 #include "InterleavedTcpTransport.h"
-#include "RtspFactory.h"
-#include "SessionDescription.h"
-#include "RtpPacket.h"
 
-#include <blockingconcurrentqueue.h>
 #include <uvpp/loop.hpp>
-#include <uvpp/async.hpp>
-#include <uvpp/timer.hpp>
-#include <uvpp/work.hpp>
 
 #include <string>
 #include <thread>
-#include <functional>
-#include <mutex>
 
 
-namespace Overflow {
-
-    class RtspWanClient: protected ITransportDelegate {
+namespace Overflow
+{
+    class RtspWanClient: protected ITransportDelegate
+    {
     public:
         RtspWanClient(IRtspDelegate * const delegate, const std::string& url);
 
-        virtual ~RtspWanClient();
+        ~RtspWanClient();
 
-        bool Start();
+        bool start();
 
-        void Stop();
-
-        bool SendPlayRequest();
-
-        bool SendPauseRequest();
+        void stop();
 
     protected:
-        
-        // ITransportDelegate
-        void OnRtpPacket(const RtpPacket*) override;
-        
-        void OnAnnounce() override { }
+        void onRtpPacket(const RtpPacket* packet) override;
 
-        void OnRedirect() override { }
+        // void onRtcpPacket(const RtcpPackate* packet) = 0;
 
-        void OnSocketWriteError() override { }
+        void onStateChange(TransportState state) override;
+        
+        void onTransportError(TransportErrorReason reason) override;
 
     private:
-
-        void StartKeepAliveTimer();
-
-        bool SendDescribeRequest();
-
-        bool SendSetupRequest(bool serverAllowsAggregate=true);
-
-        bool SendOptionsRequst();
-
-        bool SendTeardownRequest();
-
-        SessionDescription AskDelegateForPalette(const std::vector<SessionDescription>& palettes)
-        {
-            return palettes[0];
-        }
-
-        void NotifyDelegateOfTimeout() {
-            if (m_delegate != nullptr) {
-                m_delegate->Timeout();
-            }
-        }
-
-        void NotifyDelegatePayload(const unsigned char * buffer, size_t size) {
-            if (m_delegate != nullptr) {
-                m_delegate->Payload(buffer, size);
-            }
-        }
-
-        void AppendPayloadToCurrentFrame(const unsigned char *buffer, size_t length) {
-            size_t old_size = m_currentFrame.size();
-            m_currentFrame.resize(old_size + length);
-            std::copy(buffer, buffer + length, m_currentFrame.begin() + old_size);
-        }
-
-        void ResetCurrentPayload() {
-            m_currentFrame.clear();
-            m_currentFrame.resize(0);
-        }
-
-        const unsigned char * GetCurrentFrame() const { return &(m_currentFrame[0]); }
-
-        size_t GetCurrentFrameSize() const { return m_currentFrame.size(); }
-
-        bool IsFirstPayload() const { return !m_processedFirstPayload; }
-
-        bool SendRtsp(Rtsp* const rtsp, Response*& resp);
-
-        void ProcessRtpPacket(const RtpPacket* packet);
-
-        void ProcessH264Packet(const RtpPacket* packet);
-
-        std::string m_url;
-        
-        uvpp::loop m_loop;
-        uvpp::Timer m_keep_alive_timer;
-        
-        int m_rtsp_timeout_milliseconds;
-        
-        std::thread* m_eventLoopThread;
-        std::thread* m_keepAliveThread;
-        IRtspDelegate * const m_delegate;
-        InterleavedTcpTransport m_transport;
-        
-        RtspFactory m_factory;
-        SessionDescription m_palette;
-
-        int m_keepAliveIntervalInSeconds;
-        std::string m_session;
-        bool m_processedFirstPayload;
-        int m_lastSeqNum;
-        std::vector<unsigned char> m_currentFrame;
-        std::mutex m_mutex;
-        moodycamel::BlockingConcurrentQueue<int> m_keepAliveEventQueue;
+        IRtspDelegate * const mDelegate;
+        std::string mUrl;
+        uvpp::loop mLoop;
+        InterleavedTcpTransport mTcpTransport;
+        Transport* mTransport;
     };
     
 };
-
 
 #endif //__RTSP_WAN_CLIENT_H__

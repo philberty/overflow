@@ -34,9 +34,9 @@ namespace Overflow
 
         ~Response();
 
-        const unsigned char* getBytesPointer() const;
+        const unsigned char* bytesPointer() const;
 
-        const size_t getPointerLength() const;
+        const size_t length() const;
 
         bool isInterleavedPacket() const;
 

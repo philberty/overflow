@@ -39,7 +39,7 @@ Overflow::ByteBuffer::ByteBuffer(const std::string& buffer)
 
 Overflow::ByteBuffer::~ByteBuffer()
 {
-    if (m_bytes != nullptr) {
+    if (mBytes != nullptr) {
         free(mBytes);
     }
 }
@@ -54,7 +54,7 @@ Overflow::ByteBuffer::append(const unsigned char *bytes,
     }
     else
     {
-        unsigned char * buffer = (unsigned char*)malloc(length + m_length);
+        unsigned char * buffer = (unsigned char*)malloc(length + mLength);
         memcpy(buffer, mBytes, mLength);
         
         free(mBytes);
@@ -88,8 +88,8 @@ Overflow::ByteBuffer::insert(const unsigned char *bytes,
     else
     {
         unsigned char *buffer = (unsigned char *)malloc(offs + length);
-        memcpy(buffer, m_bytes, offs);
-        memcpy(buffer+offs, bytes, length);
+        memcpy(buffer, mBytes, offs);
+        memcpy(buffer + offs, bytes, length);
         
         free(mBytes);
         mBytes = buffer;
@@ -107,13 +107,13 @@ Overflow::ByteBuffer::insert(const std::string& bytes,
 }
 
 const unsigned char*
-Overflow::ByteBuffer::getBytesPointer()
+Overflow::ByteBuffer::bytesPointer() const
 {
     return mBytes;
 }
 
 const size_t
-Overflow::ByteBuffer::length()
+Overflow::ByteBuffer::length() const
 {
     return mLength;
 }
@@ -121,7 +121,7 @@ Overflow::ByteBuffer::length()
 void
 Overflow::ByteBuffer::reset()
 {
-    if (m_bytes != nullptr) {
+    if (mBytes != nullptr) {
         free(mBytes);
     }
     mBytes = nullptr;

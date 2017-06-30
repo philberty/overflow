@@ -19,7 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include "Helpers.h"
+
+#include <cstring>
 #include <sstream>
+
 
 std::string
 Overflow::Helper::intToString(int number)

@@ -31,7 +31,7 @@ Overflow::RtspFactory::RtspFactory(const std::string& url)
     setUrl(url);
 }
         
-Describe*
+Overflow::Describe*
 Overflow::RtspFactory::describeRequest(bool isLive)
 {
     Describe *request = new Describe(mPath, mSeqNum++, isLive);
@@ -41,8 +41,8 @@ Overflow::RtspFactory::describeRequest(bool isLive)
     return request;
 }
 
-Setup*
-Overflow::RtspFactory::SetupRequest(const std::string& transport)
+Overflow::Setup*
+Overflow::RtspFactory::setupRequest(const std::string& transport)
 {
     Setup *request = new Setup(mPath, mSeqNum++, transport);
     if (hasAuth()) {
@@ -51,8 +51,8 @@ Overflow::RtspFactory::SetupRequest(const std::string& transport)
     return request;
 }
 
-Play*
-Overflow::RtspFactory::PlayRequest(const std::string& session)
+Overflow::Play*
+Overflow::RtspFactory::playRequest(const std::string& session)
 {
     Play *request = new Play(mPath, mSeqNum++, session);
     if (hasAuth()) {
@@ -61,7 +61,7 @@ Overflow::RtspFactory::PlayRequest(const std::string& session)
     return request;
 }
 
-Options*
+Overflow::Options*
 Overflow::RtspFactory::optionsRequest()
 {
     Options *request = new Options(mPath, mSeqNum++);
@@ -71,7 +71,7 @@ Overflow::RtspFactory::optionsRequest()
     return request;
 }
 
-Pause*
+Overflow::Pause*
 Overflow::RtspFactory::pauseRequest(const std::string& session)
 {
     Pause *request = new Pause(mPath, mSeqNum++, session);
@@ -81,7 +81,7 @@ Overflow::RtspFactory::pauseRequest(const std::string& session)
     return request;
 }
 
-Teardown*
+Overflow::Teardown*
 Overflow::RtspFactory::teardownRequest(const std::string& session)
 {
     Teardown *request = new Teardown(mPath, mSeqNum++, session);
@@ -92,7 +92,7 @@ Overflow::RtspFactory::teardownRequest(const std::string& session)
 }
 
 void
-Overflow::RtspFactory::setPath(std::string path)
+Overflow::RtspFactory::setPath(std::string& path)
 {
     mPath.assign(path);
 }
@@ -106,12 +106,12 @@ Overflow::RtspFactory::getPath()
 void
 Overflow::RtspFactory::setUrl(const std::string& url)
 {
-    Url uri(url);
+    Url uri(url, 554);
 
     int port = uri.getPort();   
     std::string path_buffer = uri.getProtocol() + "://"
         + uri.getHost()
-        + ":" + Helper::numberToString(port)
+        + ":" + Helper::intToString(port)
         +  uri.getPath();
             
     mPath.assign(path_buffer);
@@ -124,7 +124,7 @@ Overflow::RtspFactory::setUrl(const std::string& url)
 }
 
 bool
-Overflow::RtspFactory::hasAuth()
+Overflow::RtspFactory::hasAuth() const
 {
     return mAuth64.length() > 0;
 }
