@@ -22,6 +22,8 @@
 #include "Helpers.h"
 
 #include <cstdlib>
+#include <sstream>
+#include <stdexcept>
 
 
 Overflow::SetupResponse::SetupResponse(const Response* resp)
@@ -34,10 +36,11 @@ Overflow::SetupResponse::SetupResponse(const Response* resp)
     const std::string session_header = headerValueForKey("Session");
     const std::string transport_header = headerValueForKey("Transport");
     
-    if (session_header.empty() or transport_header.empty()) {
-        ostringstream message;
+    if (session_header.empty() or transport_header.empty())
+    {
+        std::ostringstream message;
         message << "Invalid Setup RTSP Response";
-        throw std::runtime_error{ message.str() };
+        throw std::runtime_error(message.str());
     }
     
     char delim[2];
@@ -58,7 +61,8 @@ Overflow::SetupResponse::SetupResponse(const Response* resp)
             mTimeout = atoi(values[1].c_str());
         }
     }
-    else {
+    else
+    {
         // simply just session
         mSession = values[0];
     }

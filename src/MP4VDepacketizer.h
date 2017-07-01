@@ -32,7 +32,9 @@ namespace Overflow {
     class MP4VDepacketizer {
     public:
 
-        MP4VDepacketizer(const SessionDescription* palette, const RtpPacket *packet, bool isFirstPayload);
+        MP4VDepacketizer(const SessionDescription* palette,
+                         const RtpPacket *packet,
+                         bool isFirstPayload);
 
         const unsigned char *PayloadBytes() const { return &(m_payload[0]); }
 

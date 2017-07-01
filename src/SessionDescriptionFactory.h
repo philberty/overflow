@@ -22,12 +22,14 @@
 #ifndef __SESSION_DESCRIPTION_FACTORY_H__
 #define __SESSION_DESCRIPTION_FACTORY_H__
 
+#include "SessionDescription.h"
+
 #include <vector>
 #include <string>
 
 
 namespace Overflow
-{    
+{
     class SessionDescriptionFactory
     {
     public:

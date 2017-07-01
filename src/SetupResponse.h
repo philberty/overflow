@@ -29,67 +29,17 @@ namespace Overflow {
     
     class SetupResponse: public RtspResponse {
     public:
-        SetupResponse(const Response *resp): RtspResponse(resp),
-                                             m_isInterleaved(false),
-                                             m_rtpInterleavedChannel(0),
-                                             m_rtcpInterleavedChannel(1),
-                                             m_session(),
-                                             m_timeout(60)
-        {
-            const std::string session_header = HeaderValueForKey("Session");
-            const std::string transport_header = HeaderValueForKey("Transport");
-
-            if (session_header.empty() || transport_header.empty()) {
-                ostringstream message;
-                message << "Invalid Setup RTSP Response";
-                throw runtime_error{ message.str() };
-            }
-
-            char delim[2];
-            delim[0] = ';';
-            delim[1] = 0;
-            
-            std::vector<std::string> values = Helper::StringSplit(session_header, std::string((const char *)delim));
-            if (values.size() > 1) {
-                // we probably have session;timeout=
-                m_session = values[0];
-                delim[0] = '=';
-                values = Helper::StringSplit(values[1], std::string((const char *)delim));
-
-                if (values.size() > 1) {
-                    m_timeout = atoi(values[1].c_str());
-                }
-            } else {
-                // simply just session
-                m_session = values[0];
-            }
-
-            delim[0] = ';';
-            values = Helper::StringSplit(transport_header, std::string((const char *)delim));
-            std::string value = Helper::FindKeyAndValuePair(&values, "interleaved");
-            
-            if (!value.empty()) {
-                m_isInterleaved = true;
-
-                delim[0] = '=';
-                values = Helper::StringSplit(value, std::string((const char *)delim));
-                delim[0] = '-';
-                values = Helper::StringSplit(values[1], std::string((const char *)delim));
-
-                m_rtpInterleavedChannel = atoi(values[0].c_str());
-                m_rtcpInterleavedChannel = atoi(values[1].c_str());
-            }
-        }
+        SetupResponse(const Response *resp);
         
-        int getRtpInterleavedChannel() const { return m_rtpInterleavedChannel; }
+        int getRtpInterleavedChannel() const { return mRtpInterleavedChannel; }
         
-        int getRtcpInterleavedChannel() const { return m_rtcpInterleavedChannel; }
+        int getRtcpInterleavedChannel() const { return mRtcpInterleavedChannel; }
         
-        const std::string getSession() const { return m_session; }
+        const std::string getSession() const { return mSession; }
         
-        int getTimeoutSeconds() const { return m_timeout; }
+        int getTimeoutSeconds() const { return mTimeout; }
         
-        bool isInterleaved() const { return m_isInterleaved; }
+        bool isInterleaved() const { return mIsInterleaved; }
         
     private:       
         bool mIsInterleaved;

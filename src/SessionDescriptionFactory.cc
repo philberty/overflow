@@ -18,18 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "SessionDescription.h"
+#include "SessionDescriptionFactory.h"
 #include "SessionDescriptionV0.h"
 #include "Helpers.h"
 
 #include <glog/logging.h>
 
 
-static std::vector<Overflow::SessionDescription>
+std::vector<Overflow::SessionDescription>
 Overflow::SessionDescriptionFactory::parseSessionDescriptions(const std::string& body)
 {
-    std::vector<Overflow::SessionDescription> palettes;
-    std::vector<std::string> lines = Overflow::Helper::stringSplit(body, "\n");
+    std::vector<SessionDescription> palettes;
+    std::vector<std::string> lines = Helper::stringSplit(body, "\n");
     
     if (lines.size() > 0)
     {

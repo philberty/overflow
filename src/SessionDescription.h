@@ -72,7 +72,7 @@ namespace Overflow
 
         const std::string getFmtp() const { return mFmtp; }
 
-        const std::string GetFmtpH264ConfigParameters() const
+        const std::string getFmtpH264ConfigParameters() const
         {
             if (mType != RtspSessionType::H264) {
                 return std::string();

@@ -27,43 +27,32 @@
 
 #include <vector>
 
-namespace Overflow {
 
-    class H264Depacketizer {
+namespace Overflow
+{
+    class H264Depacketizer
+    {
     public:
+        H264Depacketizer(const SessionDescription* palette,
+                         const RtpPacket *packet,
+                         bool isFirstPayload);
 
-        H264Depacketizer(const SessionDescription* palette, const RtpPacket *packet, bool isFirstPayload);
+        const unsigned char* bytes() const;
 
-        const unsigned char *PayloadBytes() const { return &(m_payload[0]); }
-
-        size_t PayloadLength() const { return m_payload.size(); }
+        size_t length() const;
 
     private:
-        inline int GetH264NaluTypeFromByte(const unsigned char byte) const {
-            return byte & 0x1F;
-        }
+        int getH264NaluTypeFromByte(const unsigned char byte) const;
         
-        void PushBytesToCurrentPayload(const unsigned char *bytes, size_t length) {
-            size_t i;
-            for (i = 0; i < length; ++i) {
-                m_payload.push_back(bytes[i]);
-            }
-        }
+        void pushBytesToCurrentPayload(const unsigned char *bytes, size_t length);
 
-        void Push4ByteNaluHeaderToCurrentPayload() {
-            unsigned char nalu_header[] = { 0x00, 0x00, 0x00, 0x01 };
-            PushBytesToCurrentPayload(nalu_header, sizeof(nalu_header));
-        }
+        void push4ByteNaluHeaderToCurrentPayload();
 
-        void Push3ByteNaluHeaderToCurrentPayload() {
-            unsigned char nalu_header[] = { 0x00, 0x00, 0x01 };
-            PushBytesToCurrentPayload(nalu_header, sizeof(nalu_header));
-        }
-        
-        const SessionDescription *m_palette;
-        const RtpPacket *m_packet;
+        void push3ByteNaluHeaderToCurrentPayload();
 
-        std::vector<unsigned char> m_payload;
+        const SessionDescription *mPalette;
+        const RtpPacket *mPacket;
+        std::vector<unsigned char> mPayload;
     };
     
 };
