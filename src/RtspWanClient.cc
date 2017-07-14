@@ -20,6 +20,8 @@
 
 #include "RtspWanClient.h"
 #include "RtspResponse.h"
+#include "DescribeResponse.h"
+#include "SetupResponse.h"
 
 #include <glog/logging.h>
 #include <uvpp/async.hpp>
@@ -91,17 +93,64 @@ Overflow::RtspWanClient::onRtspResponse(const Response* response)
 
     if (oldState == CLIENT_SENDING_OPTIONS)
     {
-        // HANDLE OPTIONS RESPONSE
-        LOG(INFO) << "Received: "
-                  << response->getStringBuffer();
-        RtspResponse resp(response);
-
-        if (not resp.ok())
-            onStateChange(CLIENT_ERROR);
-        else
-            onStateChange(CLIENT_OPTIONS_OK);
+        onOptionsResponse(response);
     }
+    else if (oldState == CLIENT_SENDING_DESCRIBE)
+    {
+        onDescribeResponse(response);
+    }
+    else if (oldState == CLIENT_SENDING_SETUP)
+    {
+        onSetupResponse(response);
+    }
+}
 
+void
+Overflow::RtspWanClient::onOptionsResponse(const Response* response)
+{
+    // HANDLE OPTIONS RESPONSE
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    RtspResponse resp(response);
+    
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+    {
+        onStateChange(CLIENT_OPTIONS_OK);
+        sendDescribeRequest();
+    }
+}
+
+void
+Overflow::RtspWanClient::onDescribeResponse(const Response* response)
+{
+    // HANDLE DESCRIBE RESPONSE
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    DescribeResponse resp(response);
+    
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+    {
+        onStateChange(CLIENT_DESCRIBE_OK);
+        sendSetupRequest();
+    }
+}
+
+void
+Overflow::RtspWanClient::onSetupResponse(const Response* response)
+{
+    // HANDLE DESCRIBE RESPONSE
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    SetupResponse resp(response);
+
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+        onStateChange(CLIENT_SETUP_OK);
 }
 
 void
@@ -153,9 +202,36 @@ Overflow::RtspWanClient::sendOptionsRequest()
     onStateChange(CLIENT_SENDING_OPTIONS);
     
     Options* options = mFactory.optionsRequest();
-    const ByteBuffer& buf = options->getBuffer();
+    sendRtsp(options);
+    delete options;
+}
+
+void
+Overflow::RtspWanClient::sendDescribeRequest()
+{
+    onStateChange(CLIENT_SENDING_DESCRIBE);
+    
+    Describe* describe = mFactory.describeRequest(true);
+    sendRtsp(describe);
+    delete describe;
+}
+
+void
+Overflow::RtspWanClient::sendSetupRequest()
+{
+    onStateChange(CLIENT_SENDING_SETUP);
+
+    Setup* setup = mFactory.setupRequest(
+        mTransport->getTransportHeaderString());
+    sendRtsp(setup);
+    delete setup;
+}
+
+void
+Overflow::RtspWanClient::sendRtsp(Rtsp* request)
+{
+    const ByteBuffer& buf = request->getBuffer();
 
     mTransport->write(buf.bytesPointer(),
                       buf.length());
-    delete options;
 }

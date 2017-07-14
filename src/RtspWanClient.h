@@ -59,6 +59,8 @@ namespace Overflow
         void onTransportError(TransportErrorReason reason) override;
 
     private:
+        void sendRtsp(Rtsp* request);
+        
         void onStateChange(RtspClientState state);
 
         void notifyDelegateOfStateChange(RtspClientState oldState,
@@ -66,11 +68,15 @@ namespace Overflow
 
         void sendOptionsRequest();
 
-        void onOptionsResponse();
+        void onOptionsResponse(const Response* response);
 
         void sendDescribeRequest();
 
-        void onDescribeResponse();
+        void onDescribeResponse(const Response* response);
+
+        void sendSetupRequest();
+
+        void onSetupResponse(const Response* response);
 
         IRtspDelegate* mDelegate;
         std::string mUrl;

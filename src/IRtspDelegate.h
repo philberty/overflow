@@ -80,19 +80,31 @@ namespace Overflow
                 state_string = "sending-options-request";
                 break;
             case CLIENT_OPTIONS_OK:
-                state_String = "options-ok";
+                state_string = "options-ok";
                 break;
             case CLIENT_SENDING_DESCRIBE:
                 state_string = "sending-describe-request";
                 break;
+            case CLIENT_DESCRIBE_OK:
+                state_string = "describe-ok";
+                break;
             case CLIENT_SENDING_SETUP:
                 state_string = "sending-setup-request";
+                break;
+            case CLIENT_SETUP_OK:
+                state_string = "setup-ok";
                 break;
             case CLIENT_SENDING_PLAY:
                 state_string = "sending-play-request";
                 break;
+            case CLIENT_PLAY_OK:
+                state_string = "play-ok";
+                break;
             case CLIENT_SENDING_PAUSE:
                 state_string = "sending-pause-request";
+                break;
+            case CLIENT_PAUSE_OK:
+                state_string = "pause-ok";
                 break;
             case CLIENT_SENDING_TEARDOWN:
                 state_string = "sending-teardown-request";
