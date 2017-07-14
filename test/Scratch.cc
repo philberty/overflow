@@ -51,9 +51,7 @@ TEST(DEV, SCRATCH)
     Delegate delegate;
     Overflow::RtspWanClient client (&delegate, "rtsp://127.0.0.1:8554/test.264");
     
-    bool ok = client.start ();
-    if (ok)
-        OverflowTest::Helpers::sleep (5);
-
+    client.start ();
+    OverflowTest::Helpers::sleep (5);
     client.stop();
 }

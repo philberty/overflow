@@ -44,7 +44,7 @@ namespace Overflow
 
         ~RtspWanClient();
 
-        bool start();
+        void start();
 
         void stop();
 
@@ -67,6 +67,18 @@ namespace Overflow
         void sendRtsp(Rtsp* request);
         
         void onStateChange(RtspClientState state);
+
+        void notifyDelegateOfPayload();
+
+        void processH264Packet(const RtpPacket* packet);
+
+        void resetCurrentPayload();
+
+        size_t getCurrentFrameSize() const;
+
+        const unsigned char* getCurrentFrame() const;
+
+        void appendPayloadToCurrentFrame(const unsigned char* buffer, size_t length);
 
         void notifyDelegateOfStateChange(RtspClientState oldState,
                                          RtspClientState newState);
@@ -98,6 +110,9 @@ namespace Overflow
         SessionDescription mPalette;
         bool mServerAllowsAggregate;
         std::string mSession;
+        int mLastSeqNum;
+        bool mIsFirstPayload;
+        std::vector<unsigned char> mCurrentFrame;
     };
     
 };

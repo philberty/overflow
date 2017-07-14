@@ -117,8 +117,6 @@ Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
 void
 Overflow::InterleavedTcpTransport::readHandler(const char* buf, ssize_t len)
 {
-    LOG(INFO) << "handling-read size [" << len << "]";
-    
     std::vector<unsigned char> response;
     if (mReceivedBuffer.size() > 0)
     {
@@ -154,6 +152,10 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
         
         bool is_redirect = ((length - offset) > 8)
             and strncmp((const char*)buffer + offset, "REDIRECT", 8) == 0;
+
+        // dont have enough data
+        if (not is_rtp and not is_rtsp and not is_announce and not is_redirect)
+            break;
 
         if (is_announce)
         {
@@ -213,10 +215,7 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
             Response response(rtsp_buffer, rtsp_buffer_length);
             onRtspResponse(&response);
             offset += rtsp_buffer_length;
-        }
-        else
-            break;
-        
+        }        
     } while (offset < length);
     
     return offset;

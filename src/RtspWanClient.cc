@@ -23,6 +23,8 @@
 #include "DescribeResponse.h"
 #include "SetupResponse.h"
 
+#include "H264Depacketizer.h"
+
 #include <glog/logging.h>
 #include <uvpp/async.hpp>
 
@@ -37,15 +39,17 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mTransport(&mTcpTransport),
       mEventLoop(nullptr),
       mState(CLIENT_INITILIZED),
-      mServerAllowsAggregate(false)
+      mServerAllowsAggregate(false),
+      mLastSeqNum(-1),
+      mIsFirstPayload(true)
 { }
 
 Overflow::RtspWanClient::~RtspWanClient()
 {
-    // stop();
+    stop();
 }
 
-bool
+void
 Overflow::RtspWanClient::start()
 {
     mEventLoop = new std::thread([&]() {
@@ -56,8 +60,7 @@ Overflow::RtspWanClient::start()
             } catch(std::exception& e) {
                 LOG(INFO) << "exception from event loop: [" << e.what() << "]";
             }
-        });    
-    return true;
+        });
 }
 
 void
@@ -84,7 +87,90 @@ Overflow::RtspWanClient::stop()
 void
 Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
 {
-    LOG(INFO) << "onRtpPacket";
+    int seq_num = packet->getSequenceNumber();
+    bool initialized_last_seq_num = mLastSeqNum != -1;
+    if (not initialized_last_seq_num)
+    {
+        mLastSeqNum = seq_num - 1;
+    }
+
+    // ffserver doesnt seem to like keeping things in sequence with my test.264
+    
+    // bool out_of_sequence = (mLastSeqNum + 1) != seq_num;
+    // if (out_of_sequence) {
+    //     LOG(ERROR) << "out of sequence rtp-packets: " << mLastSeqNum << "[LAST] - " << seq_num << "[CURRENT]";
+    //     onStateChange(CLIENT_ERROR);
+    //     return;
+    // }
+    
+    mLastSeqNum = seq_num;
+
+    switch (mPalette.getType())
+    {
+    case H264:
+        processH264Packet(packet);
+        break;
+        
+    default:
+        LOG(ERROR) << "Unhandled session type: "
+                   << mPalette.getType();
+        onStateChange(CLIENT_ERROR);
+        return;
+    }
+
+    mIsFirstPayload = true;
+    if (not packet->isMarked())
+        return;
+
+    notifyDelegateOfPayload();
+    resetCurrentPayload();
+}
+
+void
+Overflow::RtspWanClient::processH264Packet(const RtpPacket* packet)
+{
+    H264Depacketizer depacketizer(&mPalette, packet, mIsFirstPayload);
+
+    const unsigned char *payload = depacketizer.bytes();
+    size_t payload_size = depacketizer.length();
+
+    appendPayloadToCurrentFrame(payload, payload_size);
+}
+
+size_t
+Overflow::RtspWanClient::getCurrentFrameSize() const
+{
+    return mCurrentFrame.size();
+}
+
+const unsigned char*
+Overflow::RtspWanClient::getCurrentFrame() const
+{
+    return &(mCurrentFrame[0]);
+}
+
+void
+Overflow::RtspWanClient::appendPayloadToCurrentFrame(const unsigned char* buffer,
+                                                     size_t length)
+{
+    size_t old_size = mCurrentFrame.size();
+    mCurrentFrame.resize(old_size + length);
+    std::copy(buffer, buffer + length, mCurrentFrame.begin() + old_size);
+}
+
+void
+Overflow::RtspWanClient::resetCurrentPayload()
+{
+    mCurrentFrame.clear();
+    mCurrentFrame.resize(0);
+}
+
+void
+Overflow::RtspWanClient::notifyDelegateOfPayload()
+{
+    if (mDelegate != nullptr)
+        mDelegate->onPayload(getCurrentFrame(),
+                             getCurrentFrameSize());
 }
 
 void
