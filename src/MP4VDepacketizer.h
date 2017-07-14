@@ -27,34 +27,27 @@
 
 #include <vector>
 
-namespace Overflow {
-
-    class MP4VDepacketizer {
+namespace Overflow
+{
+    class MP4VDepacketizer
+    {
     public:
-
         MP4VDepacketizer(const SessionDescription* palette,
                          const RtpPacket *packet,
                          bool isFirstPayload);
 
-        const unsigned char *PayloadBytes() const { return &(m_payload[0]); }
+        const unsigned char *bytes() const;
 
-        size_t PayloadLength() const { return m_payload.size(); }
+        size_t length() const;
 
     private:
-
-        void PushBytesToCurrentPayload(const unsigned char *payload, size_t length) {
-            size_t i;
-            for (i = 0; i < length; ++i) {
-                m_payload.push_back(payload[i]);
-            }
-        }
+        void pushBytesToCurrentPayload(const unsigned char *payload,
+                                       size_t length);
         
-        const SessionDescription *m_palette;
-        const RtpPacket *m_packet;
-
-        std::vector<unsigned char> m_payload;
+        const SessionDescription *mPalette;
+        const RtpPacket *mPacket;
+        std::vector<unsigned char> mPayload;
     };
-    
 };
 
 #endif //__MP4V_DEPACKETIZER_H__

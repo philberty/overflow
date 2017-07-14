@@ -25,73 +25,73 @@
 
 
 TEST(URL, PARSE0) {
-    Overflow::Url uri("http://google.com");
+    Overflow::Url uri("http://google.com", 80);
     
-    ASSERT_STREQ("http", uri.GetProtocol().c_str());
+    ASSERT_STREQ("http", uri.getProtocol().c_str());
 }
 
 
 TEST(URL, PARSE1) {
-    Overflow::Url uri("http://google.com");
+    Overflow::Url uri("http://google.com", 80);
     
-    ASSERT_STREQ("google.com", uri.GetHost().c_str());
+    ASSERT_STREQ("google.com", uri.getHost().c_str());
 }
 
 
 TEST(URL, PARSE2) {
-    Overflow::Url uri("http://google.com/");
+    Overflow::Url uri("http://google.com/", 80);
     
-    ASSERT_STREQ("google.com", uri.GetHost().c_str());
+    ASSERT_STREQ("google.com", uri.getHost().c_str());
 }
 
 
 TEST(URL, PARSE3) {
-    Overflow::Url uri("http://google.com:8080");
+    Overflow::Url uri("http://google.com:8080", 0);
 
-    ASSERT_EQ(8080, uri.GetPort());
-    ASSERT_STREQ("google.com", uri.GetHost().c_str());
+    ASSERT_EQ(8080, uri.getPort());
+    ASSERT_STREQ("google.com", uri.getHost().c_str());
 }
 
 
 TEST(URL, PARSE4) {
-    Overflow::Url uri("http://google.com:8080/");
+    Overflow::Url uri("http://google.com:8080/", 0);
 
-    ASSERT_EQ(8080, uri.GetPort());
-    ASSERT_STREQ("google.com", uri.GetHost().c_str());
+    ASSERT_EQ(8080, uri.getPort());
+    ASSERT_STREQ("google.com", uri.getHost().c_str());
 }
 
 
 TEST(URL, PARSE5) {
-    Overflow::Url uri("http://google.com/");
+    Overflow::Url uri("http://google.com/", 80);
     
-    ASSERT_EQ(80, uri.GetPort());
+    ASSERT_EQ(80, uri.getPort());
 }
 
 TEST(URL, PARSE6) {
-    Overflow::Url uri("http://admin:admin@google.com/");
+    Overflow::Url uri("http://admin:admin@google.com/", 80);
     
-    ASSERT_EQ(80, uri.GetPort());
-    ASSERT_EQ(true, uri.HasAuth());
-    ASSERT_STREQ("admin:admin", uri.GetAuth().c_str());
-    ASSERT_STREQ("/", uri.GetPath().c_str());
+    ASSERT_EQ(80, uri.getPort());
+    ASSERT_EQ(true, uri.hasAuth());
+    ASSERT_STREQ("admin:admin", uri.getAuth().c_str());
+    ASSERT_STREQ("/", uri.getPath().c_str());
 }
 
 TEST(URL, PARSE7) {
-    Overflow::Url uri("http://admin:admin@google.com/mypath/1/2/3");
+    Overflow::Url uri("http://admin:admin@google.com/mypath/1/2/3", 80);
     
-    ASSERT_EQ(80, uri.GetPort());
-    ASSERT_EQ(true, uri.HasAuth());
-    ASSERT_STREQ("admin:admin", uri.GetAuth().c_str());
-    ASSERT_STREQ("/mypath/1/2/3", uri.GetPath().c_str());
-    ASSERT_STREQ("google.com", uri.GetHost().c_str());
+    ASSERT_EQ(80, uri.getPort());
+    ASSERT_EQ(true, uri.hasAuth());
+    ASSERT_STREQ("admin:admin", uri.getAuth().c_str());
+    ASSERT_STREQ("/mypath/1/2/3", uri.getPath().c_str());
+    ASSERT_STREQ("google.com", uri.getHost().c_str());
 }
 
 TEST(URL, PARSE8) {
-    Overflow::Url uri("rtsp://admin:admin@localhost:8554/test.264");
+    Overflow::Url uri("rtsp://admin:admin@localhost:8554/test.264", 8554);
 
-    ASSERT_EQ(8554, uri.GetPort());
-    ASSERT_EQ(true, uri.HasAuth());
-    ASSERT_STREQ("admin:admin", uri.GetAuth().c_str());
-    ASSERT_STREQ("/test.264", uri.GetPath().c_str());
-    ASSERT_STREQ("localhost", uri.GetHost().c_str());
+    ASSERT_EQ(8554, uri.getPort());
+    ASSERT_EQ(true, uri.hasAuth());
+    ASSERT_STREQ("admin:admin", uri.getAuth().c_str());
+    ASSERT_STREQ("/test.264", uri.getPath().c_str());
+    ASSERT_STREQ("localhost", uri.getHost().c_str());
 }

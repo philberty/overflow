@@ -132,8 +132,9 @@ static unsigned char chm_ac_symbols[] = {
 /*
  * Call MakeTables with the Q factor and two u_char[64] return arrays
  */
-static
-void MakeTables(int q, unsigned char *lqt, unsigned char *cqt) {
+static void
+makeTables(int q, unsigned char *lqt, unsigned char *cqt)
+{
     int i;
     int factor = q;
 
@@ -159,8 +160,11 @@ void MakeTables(int q, unsigned char *lqt, unsigned char *cqt) {
     }
 }
 
-static
-void MakeQuantHeader(std::vector<unsigned char> * const p, unsigned char *qt, int tableNo) {
+static void
+makeQuantHeader(std::vector<unsigned char> * const p,
+                unsigned char *qt,
+                int tableNo)
+{
     p->push_back(0xff);
     p->push_back(0xdb);
     p->push_back(0);
@@ -172,10 +176,15 @@ void MakeQuantHeader(std::vector<unsigned char> * const p, unsigned char *qt, in
     std::copy(qt, qt + 64, p->begin() + preCopySize);
 }
 
-static
-void MakeHuffmanHeader(std::vector<unsigned char> * const p, unsigned char *codelens, int ncodes,
-                       unsigned char *symbols, int nsymbols, int tableNo,
-                       int tableClass) {
+static void
+makeHuffmanHeader(std::vector<unsigned char> * const p,
+                  unsigned char *codelens,
+                  int ncodes,
+                  unsigned char *symbols,
+                  int nsymbols,
+                  int tableNo,
+                  int tableClass)
+{
     p->push_back(0xff);
     p->push_back(0xc4);
     p->push_back(0);
@@ -190,8 +199,10 @@ void MakeHuffmanHeader(std::vector<unsigned char> * const p, unsigned char *code
     std::copy(symbols, symbols + nsymbols, p->begin() + preCopySize + ncodes);
 }
 
-static
-void MakeDRIHeader(std::vector<unsigned char> * const p, unsigned short dri) {
+static void
+makeDRIHeader(std::vector<unsigned char> * const p,
+              unsigned short dri)
+{
     p->push_back(0xff);
     p->push_back(0xdd);
     p->push_back(0x0);
@@ -218,9 +229,14 @@ void MakeDRIHeader(std::vector<unsigned char> * const p, unsigned short dri) {
  *    interchange format (except for possible trailing garbage and
  *    absence of an EOI marker to terminate the scan).
  */
-static
-void MakeHeaders(std::vector<unsigned char> * const p, int type, int w, int h, unsigned char *lqt,
-                 unsigned char *cqt, unsigned short dri)
+static void
+makeHeaders(std::vector<unsigned char> * const p,
+            int type,
+            int w,
+            int h,
+            unsigned char *lqt,
+            unsigned char *cqt,
+            unsigned short dri)
 {
     p->clear();
     p->resize(0);
@@ -232,11 +248,11 @@ void MakeHeaders(std::vector<unsigned char> * const p, int type, int w, int h, u
     p->push_back(0xff);
     p->push_back(0xd8);
 
-    MakeQuantHeader(p, lqt, 0);
-    MakeQuantHeader(p, cqt, 1);
+    makeQuantHeader(p, lqt, 0);
+    makeQuantHeader(p, cqt, 1);
 
     if (dri != 0)
-        MakeDRIHeader(p, dri);
+        makeDRIHeader(p, dri);
 
     p->push_back(0xff);
     p->push_back(0xc0);
@@ -263,19 +279,19 @@ void MakeHeaders(std::vector<unsigned char> * const p, int type, int w, int h, u
     p->push_back(0x11);
     p->push_back(1);
     
-    MakeHuffmanHeader(p, lum_dc_codelens,
+    makeHuffmanHeader(p, lum_dc_codelens,
                       sizeof(lum_dc_codelens),
                       lum_dc_symbols,
                       sizeof(lum_dc_symbols), 0, 0);
-    MakeHuffmanHeader(p, lum_ac_codelens,
+    makeHuffmanHeader(p, lum_ac_codelens,
                       sizeof(lum_ac_codelens),
                       lum_ac_symbols,
                       sizeof(lum_ac_symbols), 0, 1);
-    MakeHuffmanHeader(p, chm_dc_codelens,
+    makeHuffmanHeader(p, chm_dc_codelens,
                       sizeof(chm_dc_codelens),
                       chm_dc_symbols,
                       sizeof(chm_dc_symbols), 1, 0);
-    MakeHuffmanHeader(p, chm_ac_codelens,
+    makeHuffmanHeader(p, chm_ac_codelens,
                       sizeof(chm_ac_codelens),
                       chm_ac_symbols,
                       sizeof(chm_ac_symbols), 1, 1);
@@ -297,72 +313,75 @@ void MakeHeaders(std::vector<unsigned char> * const p, int type, int w, int h, u
 }
 
 Overflow::MJPEGDepacketizer::MJPEGDepacketizer(const SessionDescription* palette,
-                                            const RtpPacket *packet,
-                                            bool isFirstPayload) : m_palette(palette),
-                                                                   m_packet(packet) {
+                                               const RtpPacket *packet,
+                                               bool isFirstPayload)
+    : mPalette(palette),
+      mPacket(packet)
+{    
+    const unsigned char *rtp_packet_payload = mPacket->payloadData();
+    parseJpegHeader(rtp_packet_payload);
 
-    const unsigned char *rtp_packet_payload = m_packet->PayloadData();
-    
-    ParseJpegHeader(rtp_packet_payload);
-
-    if (m_fragmentOffset == 0) {
-        m_restartHeaderSize = ((m_type >= RESTART_MIN) && (m_type <= RESTART_MAX)) ?
+    if (mFragmentOffset == 0)
+    {
+        mRestartHeaderSize = ((mType >= RESTART_MIN) && (mType <= RESTART_MAX)) ?
             RESTARTMARKERHEADERSIZE : 0;
         
-        m_dri = 0;
+        mDri = 0;
 
-        if (m_restartHeaderSize > 0 ) {
-            ParseRestartMarkerHeader(rtp_packet_payload + JPEGHEADERSIZE);
+        if (mRestartHeaderSize > 0 ) {
+            parseRestartMarkerHeader(rtp_packet_payload + JPEGHEADERSIZE);
         }
 
-        ParseQuantizationHeader(rtp_packet_payload + JPEGHEADERSIZE + m_restartHeaderSize);
+        parseQuantizationHeader(rtp_packet_payload + JPEGHEADERSIZE + mRestartHeaderSize);
 
-        if (m_quantizationPayloadLength > 0) {
-            ParseQuantizationTableData(rtp_packet_payload
+        if (mQuantizationPayloadLength > 0) {
+            parseQuantizationTableData(rtp_packet_payload
                                        + JPEGHEADERSIZE
-                                       + m_restartHeaderSize
+                                       + mRestartHeaderSize
                                        + QUANTIZATIONTABLEHEADERSIZE);
         }
 
-        MakeHeaders(&m_payload, m_type, m_width, m_height, m_lumq, m_chrq, m_dri);
+        makeHeaders(&mPayload, mType, mWidth, mHeight, mLumq, mChrq, mDri);
     }
-    else {
-        m_quantizationPayloadLength = 0;
-        m_payload.resize(0);
-        m_payload.clear();
+    else
+    {
+        mQuantizationPayloadLength = 0;
+        mPayload.resize(0);
+        mPayload.clear();
     }
 }
 
-void Overflow::MJPEGDepacketizer::AddToFrame(std::vector<unsigned char> * const frame) {
-    const unsigned char *rtp_packet_payload = m_packet->PayloadData();
-    size_t rtp_packet_length = m_packet->PayloadLength();
+void Overflow::MJPEGDepacketizer::addToFrame(std::vector<unsigned char> * const frame)
+{
+    const unsigned char *rtp_packet_payload = mPacket->payloadData();
+    size_t rtp_packet_length = mPacket->payloadLength();
     
     size_t frame_length = frame->size();
 
-    if (frame_length == 0 && m_fragmentOffset > 0) {
+    if (frame_length == 0 && mFragmentOffset > 0)
         return;
-    }
 
     size_t jpeg_payload_offset = JPEGHEADERSIZE;
-    if (m_fragmentOffset == 0) {
-        jpeg_payload_offset += (m_restartHeaderSize
+    if (mFragmentOffset == 0)
+    {
+        jpeg_payload_offset += (mRestartHeaderSize
                                 + QUANTIZATIONTABLEHEADERSIZE
-                                + m_quantizationPayloadLength);
+                                + mQuantizationPayloadLength);
     }
     
-    size_t add_to_packet_size = m_payload.size() + rtp_packet_length - jpeg_payload_offset;
+    size_t add_to_packet_size = mPayload.size() + rtp_packet_length - jpeg_payload_offset;
 
     if (frame_length < (frame_length + add_to_packet_size)) {
         frame->resize(frame_length + add_to_packet_size);
     }
 
-    if (m_fragmentOffset == 0) {
-        std::copy(m_payload.begin(), m_payload.end(), frame->begin());
-        frame_length += m_payload.size();
+    if (mFragmentOffset == 0) {
+        std::copy(mPayload.begin(), mPayload.end(), frame->begin());
+        frame_length += mPayload.size();
     }
 
-    if (m_fragmentOffset != 0) {
-        jpeg_payload_offset += m_restartHeaderSize;
+    if (mFragmentOffset != 0) {
+        jpeg_payload_offset += mRestartHeaderSize;
     }
 
     std::copy(rtp_packet_payload + jpeg_payload_offset,
@@ -370,8 +389,8 @@ void Overflow::MJPEGDepacketizer::AddToFrame(std::vector<unsigned char> * const 
               frame->begin() + frame_length);
 }
 
-void Overflow::MJPEGDepacketizer::ParseJpegHeader(const unsigned char *buffer) {
-    
+void Overflow::MJPEGDepacketizer::parseJpegHeader(const unsigned char *buffer)
+{    
     const unsigned char * fragmentOffset = &buffer[1];
     const unsigned char * typeOffset =  &buffer[4];
     const unsigned char * qOffset = &buffer[5];
@@ -379,65 +398,71 @@ void Overflow::MJPEGDepacketizer::ParseJpegHeader(const unsigned char *buffer) {
     const unsigned char * heightOffset = &buffer[7];
 
     // reset variables
-    m_fragmentOffset = 0;
-    m_type = 0;
-    m_qValue = 0;
-    m_width = 0;
-    m_height = 0;
+    mFragmentOffset = 0;
+    mType = 0;
+    mQValue = 0;
+    mWidth = 0;
+    mHeight = 0;
     
-    m_fragmentOffset |= 0x00 & 0xFF;
-    m_fragmentOffset <<= 8;
-    m_fragmentOffset |= fragmentOffset[0] & 0xFF;
-    m_fragmentOffset <<= 8;
-    m_fragmentOffset |= fragmentOffset[1] & 0xFF;
-    m_fragmentOffset <<= 8;
-    m_fragmentOffset |= fragmentOffset[2] & 0xFF;
+    mFragmentOffset |= 0x00 & 0xFF;
+    mFragmentOffset <<= 8;
+    mFragmentOffset |= fragmentOffset[0] & 0xFF;
+    mFragmentOffset <<= 8;
+    mFragmentOffset |= fragmentOffset[1] & 0xFF;
+    mFragmentOffset <<= 8;
+    mFragmentOffset |= fragmentOffset[2] & 0xFF;
     
-    m_type |= typeOffset[0] & 0xFF;
-    m_qValue |= qOffset[0] & 0xFF;
-    m_width |= widthOffset[0] & 0xFF;
-    m_height |= heightOffset[0] & 0xFF;
+    mType |= typeOffset[0] & 0xFF;
+    mQValue |= qOffset[0] & 0xFF;
+    mWidth |= widthOffset[0] & 0xFF;
+    mHeight |= heightOffset[0] & 0xFF;
 }
 
-void Overflow::MJPEGDepacketizer::ParseRestartMarkerHeader(const unsigned char * buffer) {
-    m_dri = 0;
-    m_dri = buffer[0];
-    m_dri = m_dri << 8;
-    m_dri = m_dri | buffer[1];
-}
-
-void Overflow::MJPEGDepacketizer::ParseQuantizationHeader(const unsigned char * pQuantizationHeader)
+void
+Overflow::MJPEGDepacketizer::parseRestartMarkerHeader(const unsigned char * buffer)
 {
-    m_quantizationPayloadLength = 0;
+    mDri = 0;
+    mDri = buffer[0];
+    mDri = mDri << 8;
+    mDri = mDri | buffer[1];
+}
 
-    if (m_fragmentOffset == 0) {
-        m_quantizationPayloadLength |= pQuantizationHeader[2] & 0xFF;
-        m_quantizationPayloadLength <<= 8;
-        m_quantizationPayloadLength |= pQuantizationHeader[3] & 0xFF;
+void
+Overflow::MJPEGDepacketizer::parseQuantizationHeader(const unsigned char * pQuantizationHeader)
+{
+    mQuantizationPayloadLength = 0;
+
+    if (mFragmentOffset == 0) {
+        mQuantizationPayloadLength |= pQuantizationHeader[2] & 0xFF;
+        mQuantizationPayloadLength <<= 8;
+        mQuantizationPayloadLength |= pQuantizationHeader[3] & 0xFF;
     }
 }
 
-void Overflow::MJPEGDepacketizer::ParseQuantizationTableData(const unsigned char * pQuantizationTableData)
+void
+Overflow::MJPEGDepacketizer::parseQuantizationTableData(const unsigned char * pQuantizationTableData)
 {
-    if (m_quantizationPayloadLength > 0) {
+    if (mQuantizationPayloadLength > 0)
+    {
         int quantizationTableDataPosition = 0;
 
         size_t lumqPosition;
-        for (lumqPosition = 0; lumqPosition < 64 && lumqPosition < m_quantizationPayloadLength; lumqPosition++)
+        for (lumqPosition = 0; lumqPosition < 64 && lumqPosition < mQuantizationPayloadLength; lumqPosition++)
         {
-            m_lumq[lumqPosition] = pQuantizationTableData[quantizationTableDataPosition];
+            mLumq[lumqPosition] = pQuantizationTableData[quantizationTableDataPosition];
             quantizationTableDataPosition++;
         }
 
         int chrqPosition;
-        for (chrqPosition = 0; chrqPosition < 64 && chrqPosition < m_quantizationPayloadLength; chrqPosition++)
+        for (chrqPosition = 0; chrqPosition < 64 && chrqPosition < mQuantizationPayloadLength; chrqPosition++)
         {
-            m_chrq[chrqPosition] = pQuantizationTableData[quantizationTableDataPosition];
+            mChrq[chrqPosition] = pQuantizationTableData[quantizationTableDataPosition];
             quantizationTableDataPosition++;
         }
     }
-    else {
+    else
+    {
         // create tables from qfactor
-        MakeTables(m_qValue, m_lumq, m_chrq);
+        makeTables(mQValue, mLumq, mChrq);
     }
 }

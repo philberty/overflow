@@ -27,29 +27,31 @@
 #include <RtspWanClient.h>
 
 
-class Delegate: public Overflow::IRtspDelegate {
-        
-    void Timeout() override {
+class Delegate: public Overflow::IRtspDelegate
+{        
+    void Timeout() override
+    {
         LOG(INFO) << "TIMEOUT";
     }
         
-    void Payload(const unsigned char * buffer, const size_t length) override {
+    void Payload(const unsigned char * buffer, const size_t length) override
+    {
         OverflowTest::Helpers::PrintOutAllNaluTypes(buffer, length);
     }
-    
 };
 
 
-TEST(DEV, SCRATCH) {
+TEST(DEV, SCRATCH)
+{
     OverflowTest::Helpers::SetupTestLogger();
     
     Delegate delegate;
     Overflow::RtspWanClient client(&delegate, "rtsp://127.0.0.1:8554/test.264");
     
-    bool ok = client.Start();
+    bool ok = client.start();
     if (ok) {
         OverflowTest::Helpers::Sleep(10);
     }
 
-    client.Stop();
+    client.stop();
 }

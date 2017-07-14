@@ -27,42 +27,41 @@
 
 #include <vector>
 
-namespace Overflow {
-
-    class MJPEGDepacketizer {
+namespace Overflow
+{
+    class MJPEGDepacketizer
+    {
     public:
+        MJPEGDepacketizer(const SessionDescription* palette,
+                          const RtpPacket *packet,
+                          bool isFirstPayload);
 
-        MJPEGDepacketizer(const SessionDescription* palette, const RtpPacket *packet, bool isFirstPayload);
-
-        void AddToFrame(std::vector<unsigned char> * const frame);
+        void addToFrame(std::vector<unsigned char> * const frame);
 
     private:
+        void parseJpegHeader(const unsigned char * buffer);
 
-        void ParseJpegHeader(const unsigned char * buffer);
+        void parseRestartMarkerHeader(const unsigned char * buffer);
 
-        void ParseRestartMarkerHeader(const unsigned char * buffer);
+        void parseQuantizationHeader(const unsigned char * buffer);
 
-        void ParseQuantizationHeader(const unsigned char * buffer);
+        void parseQuantizationTableData(const unsigned char * buffer);
 
-        void ParseQuantizationTableData(const unsigned char * buffer);
-
-        int m_height;
-        int m_width;
-        int m_type;
-        int m_qValue;
-        int m_fragmentOffset;
-        int m_restartHeaderSize;
-        int m_dri;
-        int m_quantizationPayloadLength;
-        unsigned char m_lumq[64];
-        unsigned char m_chrq[64];
+        int mHeight;
+        int mWidth;
+        int mType;
+        int mQValue;
+        int mFragmentOffset;
+        int mRestartHeaderSize;
+        int mDri;
+        int mQuantizationPayloadLength;
+        unsigned char mLumq[64];
+        unsigned char mChrq[64];
         
-        const SessionDescription *m_palette;
-        const RtpPacket *m_packet;
-
-        std::vector<unsigned char> m_payload;
+        const SessionDescription *mPalette;
+        const RtpPacket *mPacket;
+        std::vector<unsigned char> mPayload;
     };
-    
 };
 
 #endif //__MJPEG_DEPACKETIZER_H__
