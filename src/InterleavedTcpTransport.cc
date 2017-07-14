@@ -33,7 +33,9 @@ Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * 
     : Transport(delegate), 
       mTcp(loop),
       mRtpInterleavedChannel(0),
-      mRtcpInterleavedChannel(1)
+      mRtcpInterleavedChannel(1),
+      mConnectionHandler([&](const uvpp::error& error) { connectionHandler(error); }),
+      mReadHandler([&](const char* buf, ssize_t len) { readHandler(buf, len); })
 {
     Url uri(url, 554);
     mHost = uri.getHost();
@@ -74,42 +76,150 @@ Overflow::InterleavedTcpTransport::write(const unsigned char *buffer,
 {    
     mTcp.write((const char *)buffer, (int)length,
                [&](uvpp::error e) {
-                   onError(UNKNOWN);
+                   if (e)
+                       onError(UNKNOWN);
                });
 }
-
+ 
 void
 Overflow::InterleavedTcpTransport::shutdown()
 {
     mTcp.read_stop();
-    
-    // mTcp.shutdown([&](uvpp::error e) {
-    //         // TODO
-    //     });
+    onStateChange(DISCONNECTED);
 }
 
 bool
 Overflow::InterleavedTcpTransport::connect()
 {
-    auto connection_handler = [&](const uvpp::error& error) {
-        if (error)
-        {
-            LOG(INFO) << "failed to connect: tcp://" << mHost << ":" << mPort;
-            onError(UNKNOWN);
-            return;
-        }
-        
-        LOG(INFO) << "Connected: tcp://" << mHost << ":" << mPort;
-        // mTcp.read_start(readCallback);
-    };
+    onStateChange(CONNECTING);
+    return mTcp.connect(mHost, mPort, mConnectionHandler);
+}
 
-    return mTcp.connect(mHost, mPort, connection_handler);
+void
+Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
+{
+    if (error)
+    {
+        LOG(INFO) << "failed to connect: tcp://" << mHost << ":" << mPort;
+        onError(UNKNOWN); // TODO error types
+        onStateChange(DISCONNECTED);
+        return;
+    }
+    
+    onStateChange(CONNECTED);
+    LOG(INFO) << "Connected: tcp://" << mHost << ":" << mPort;
+
+    // start reading
+    mTcp.read_start(mReadHandler);
+}
+
+void
+Overflow::InterleavedTcpTransport::readHandler(const char* buf, ssize_t len)
+{
+    LOG(INFO) << "handling-read size [" << len << "]";
+    
+    std::vector<unsigned char> response;
+    if (mReceivedBuffer.size() > 0)
+    {
+        response.resize (mReceivedBuffer.size());
+        std::copy (mReceivedBuffer.begin(), mReceivedBuffer.end(), response.begin());
+        mReceivedBuffer.clear ();
+        mReceivedBuffer.resize (0);
+    }
+
+    size_t response_offset = response.size ();
+    size_t total_buffer_size = response_offset + len;
+    response.resize(total_buffer_size);
+    std::copy(buf, buf + len, response.begin() + response_offset);
+
+    size_t read_size = readResponse(&(response[0]), response.size());
+    size_t trailing_length = total_buffer_size - read_size;
+    mReceivedBuffer.resize (trailing_length);
+    std::copy(response.begin() + read_size, response.end(), mReceivedBuffer.begin());
 }
 
 size_t
 Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
                                                 size_t length)
 {
-    return 0;
+    size_t offset = 0;
+    do {
+        bool is_rtp = ((length - offset) > 4) && buffer[offset] == '$';
+        bool is_rtsp = ((length - offset) > 8)
+            and strncmp((const char*)buffer + offset, "RTSP/1.0", 8) == 0;
+        
+        bool is_announce = ((length - offset) > 8)
+            and strncmp((const char*)buffer + offset, "ANNOUNCE", 8) == 0;
+        
+        bool is_redirect = ((length - offset) > 8)
+            and strncmp((const char*)buffer + offset, "REDIRECT", 8) == 0;
+
+        LOG(INFO) << "isRtp: " << is_rtp << " - "
+                  << "isRtsp: " << is_rtsp << " - "
+                  << "isAnnounce: " << is_announce << " - "
+                  << "isRedirect: " << is_redirect;
+
+        if (is_announce)
+        {
+            // TODO
+            break;
+        }
+        else if (is_redirect)
+        {
+            // TODO
+            break;
+        }
+        else if (is_rtp)
+        {
+            int channel = static_cast<int>(buffer[offset + 1]);
+
+            uint16_t network_order_packet_length;
+            memcpy(&network_order_packet_length, buffer + offset + 2, 2);
+            uint16_t packet_length = ntohs(network_order_packet_length);
+
+            bool have_whole_packet = (length - (offset + 4)) >= packet_length;
+            if (not have_whole_packet)
+                break;
+            
+            if (channel == mRtpInterleavedChannel)
+            {
+                RtpPacket pack(buffer + offset + 4, packet_length);
+                onRtpPacket(&pack);
+            }
+            // TODO RTCP
+            
+            offset += packet_length + 4;
+        }
+        else if (is_rtsp)
+        {
+            std::string string_response;
+            string_response.resize(length - offset);
+            std::copy(buffer + offset, buffer + length, string_response.begin());
+
+            size_t body_pos = string_response.find("\r\n\r\n");
+            bool has_body = body_pos != std::string::npos;
+            if (not has_body)
+                break;
+            
+            size_t pos = string_response.find("Content-Length:");
+            size_t content_length = (pos != std::string::npos) ?
+                static_cast<size_t>(atoi(&string_response[pos + 16])) :
+                0;
+                
+            size_t headers_length = body_pos;
+            const unsigned char *rtsp_buffer = buffer + offset;
+            size_t rtsp_buffer_length = content_length + 4 + headers_length;
+
+            bool has_full_rtsp_response = (length - offset) >= rtsp_buffer_length;
+            if (not has_full_rtsp_response)
+                break;
+
+            Response response(rtsp_buffer, rtsp_buffer_length);
+            onRtspResponse(&response);
+            offset += rtsp_buffer_length;
+        }
+    } while (offset < length);
+    
+    return offset;
 }
 

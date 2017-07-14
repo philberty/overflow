@@ -53,6 +53,10 @@ namespace Overflow
         void shutdown() override;
 
     private:
+        void connectionHandler(const uvpp::error& error);
+
+        void readHandler(const char* buf, ssize_t len);
+        
         size_t readResponse(const unsigned char* buffer, size_t length);
 
         uvpp::Tcp mTcp;
@@ -61,6 +65,9 @@ namespace Overflow
         int mRtpInterleavedChannel;
         int mRtcpInterleavedChannel;
         std::vector<unsigned char> mReceivedBuffer;
+
+        std::function<void (const uvpp::error&)> mConnectionHandler;
+        std::function<void (const char* buf, ssize_t len)> mReadHandler;
     };
 };
 

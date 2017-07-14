@@ -1,4 +1,4 @@
-// -*-c++-*-
+ // -*-c++-*-
 // Copyright (c) 2017 Philip Herron.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +26,7 @@
 #include "ITransportDelegate.h"
 #include "Transport.h"
 #include "InterleavedTcpTransport.h"
+#include "RtspFactory.h"
 
 #include <uvpp/loop.hpp>
 
@@ -34,7 +35,7 @@
 
 
 namespace Overflow
-{
+{   
     class RtspWanClient: protected ITransportDelegate
     {
     public:
@@ -51,16 +52,34 @@ namespace Overflow
 
         // void onRtcpPacket(const RtcpPackate* packet) = 0;
 
-        void onStateChange(TransportState state) override;
+        void onRtspResponse(const Response* response) override;
+
+        void onStateChange(TransportState oldState, TransportState newState) override;
         
         void onTransportError(TransportErrorReason reason) override;
 
     private:
-        IRtspDelegate * const mDelegate;
+        void onStateChange(RtspClientState state);
+
+        void notifyDelegateOfStateChange(RtspClientState oldState,
+                                         RtspClientState newState);
+
+        void sendOptionsRequest();
+
+        void onOptionsResponse();
+
+        void sendDescribeRequest();
+
+        void onDescribeResponse();
+
+        IRtspDelegate* mDelegate;
         std::string mUrl;
+        RtspFactory mFactory;
         uvpp::loop mLoop;
         InterleavedTcpTransport mTcpTransport;
         Transport* mTransport;
+        std::thread* mEventLoop;
+        RtspClientState mState;
     };
     
 };

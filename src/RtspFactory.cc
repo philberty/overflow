@@ -20,6 +20,7 @@
 
 #include <cppcodec/base64_default_rfc4648.hpp>
 
+#include "Rtsp.h"
 #include "RtspFactory.h"
 #include "Url.h"
 #include "Helpers.h"

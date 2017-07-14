@@ -28,18 +28,20 @@ Overflow::Rtsp::Rtsp(const std::string& method,
     : mMethod(method),
       mPath(path)
 {
-    addHeader("CSeq", Helper::numberToString(seqNum));
+    addHeader("CSeq", Helper::intToString(seqNum));
 }
 
-const ByteBuffer&
+const Overflow::ByteBuffer&
 Overflow::Rtsp::getBuffer()
 {
     mBuffer.reset();
     
-    mBuffer.append(m_method + " " + m_path + " RTSP/1.0\r\n");
-    for (auto it = mHeaders.begin(); it != mHeaders.end(); ++it) {
+    mBuffer.append(mMethod + " " + mPath + " RTSP/1.0\r\n");
+    for (auto it = mHeaders.begin(); it != mHeaders.end(); ++it)
+    {
         mBuffer.append(it->first + ": " + it->second + "\r\n");
     }
+    
     mBuffer.append("\r\n\r\n");
     
     // TODO:
@@ -55,7 +57,7 @@ Overflow::Rtsp::addAuth(const std::string& encoded)
 }
 
 const std::string&
-Overflow::Rtsp::getMethod()
+Overflow::Rtsp::getMethod() const
 {
     return mMethod;
 }
@@ -64,7 +66,7 @@ std::string
 Overflow::Rtsp::toString()
 {
     std::string buf;
-    buf += m_method + ":" + m_path;
+    buf += mMethod + ":" + mPath;
     return buf;    
 }
 

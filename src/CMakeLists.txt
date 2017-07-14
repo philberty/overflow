@@ -9,7 +9,7 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/ext/cppcodec/
   )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2")
 
 set(JNI_SOURCES)
 set(JNI_LIBS)
@@ -89,10 +89,12 @@ add_library(overflow
   Response.cc
   RtspResponse.cc
   RtspFactory.cc
+  Rtsp.cc
   Url.cc
   RtpPacket.cc
   Helpers.cc
   ByteBuffer.cc
+  RtspFactory.cc
   SessionDescriptionFactory.cc
   SessionDescriptionV0.cc
   SetupResponse.cc

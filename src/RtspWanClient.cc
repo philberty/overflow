@@ -19,17 +19,22 @@
 // THE SOFTWARE.
 
 #include "RtspWanClient.h"
+#include "RtspResponse.h"
 
 #include <glog/logging.h>
+#include <uvpp/async.hpp>
 
 
 Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
                                        const std::string& url)
     : mDelegate(delegate),
       mUrl(url),
+      mFactory(url),
       mLoop(),
       mTcpTransport(this, mLoop, url),
-      mTransport(&mTcpTransport)
+      mTransport(&mTcpTransport),
+      mEventLoop(nullptr),
+      mState(CLIENT_INITILIZED)
 { }
 
 Overflow::RtspWanClient::~RtspWanClient()
@@ -40,30 +45,117 @@ Overflow::RtspWanClient::~RtspWanClient()
 bool
 Overflow::RtspWanClient::start()
 {
-    return false;
+    mEventLoop = new std::thread([&]() {
+            try {
+                LOG(INFO) << "event-loop started on:  " << std::this_thread::get_id();
+                mTransport->connect ();
+                mLoop.run ();
+            } catch(std::exception& e) {
+                LOG(INFO) << "exception from event loop: [" << e.what() << "]";
+            }
+        });    
+    return true;
 }
 
 void
 Overflow::RtspWanClient::stop()
 {
-    // TODO
+    if (mEventLoop == nullptr)
+        return;
+
+    LOG(INFO) << "Stopping RtspWanClient";
+    uvpp::Async async(mLoop, [&]() {
+            mLoop.stop();
+            LOG(INFO) << "stopped event-loop core";
+        });
+    async.send();
+    
+    mEventLoop->join();
+    delete mEventLoop;
+    mEventLoop = nullptr;
+    
+    LOG(INFO) << "stopped event-loop thread";
 }
 
 void
 Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
 {
-    // TODO
-    delete packet;
+    LOG(INFO) << "onRtpPacket";
 }
 
 void
-Overflow::RtspWanClient::onStateChange(TransportState state)
+Overflow::RtspWanClient::onRtspResponse(const Response* response)
 {
-    // TODO
+    RtspClientState oldState = mState;
+    onStateChange(CLIENT_RECEIVED_RESPONSE);
+
+    if (oldState == CLIENT_SENDING_OPTIONS)
+    {
+        // HANDLE OPTIONS RESPONSE
+        LOG(INFO) << "Received: "
+                  << response->getStringBuffer();
+        RtspResponse resp(response);
+
+        if (not resp.ok())
+            onStateChange(CLIENT_ERROR);
+        else
+            onStateChange(CLIENT_OPTIONS_OK);
+    }
+
+}
+
+void
+Overflow::RtspWanClient::onStateChange(TransportState oldState,
+                                       TransportState newState)
+{
+    LOG(INFO) << "transport-state-change: "
+              <<  stateToString(oldState) << "::old-state - "
+              << stateToString(newState) << "::new-state";
+
+    if (newState == CONNECTING)
+        onStateChange(CLIENT_CONNECTING);
+    else if (newState == CONNECTED)
+        onStateChange(CLIENT_CONNECTED);
+
+    if (oldState == CONNECTING and newState == CONNECTED)
+    {
+        // SEND OPTIONS
+        sendOptionsRequest();
+    }
 }
 
 void
 Overflow::RtspWanClient::onTransportError(TransportErrorReason reason)
 {
-    // TODO
+    LOG(INFO) << "transport-error: " << stateToString(reason);
+}
+
+void
+Overflow::RtspWanClient::onStateChange(RtspClientState state)
+{
+    RtspClientState oldState = mState;
+    mState = state;
+
+    notifyDelegateOfStateChange (oldState, mState);
+}
+
+void
+Overflow::RtspWanClient::notifyDelegateOfStateChange(RtspClientState oldState,
+                                                     RtspClientState newState)
+{
+    if (mDelegate != nullptr)
+        mDelegate->onRtspClientStateChange (oldState, newState);
+}
+
+void
+Overflow::RtspWanClient::sendOptionsRequest()
+{
+    onStateChange(CLIENT_SENDING_OPTIONS);
+    
+    Options* options = mFactory.optionsRequest();
+    const ByteBuffer& buf = options->getBuffer();
+
+    mTransport->write(buf.bytesPointer(),
+                      buf.length());
+    delete options;
 }

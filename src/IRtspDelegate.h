@@ -30,7 +30,21 @@ namespace Overflow
 {
     typedef enum
     {
+        CLIENT_INITILIZED,
         CLIENT_CONNECTING,
+        CLIENT_CONNECTED,
+        CLIENT_SENDING_OPTIONS,
+        CLIENT_OPTIONS_OK,
+        CLIENT_SENDING_DESCRIBE,
+        CLIENT_DESCRIBE_OK,
+        CLIENT_SENDING_SETUP,
+        CLIENT_SETUP_OK,
+        CLIENT_SENDING_PLAY,
+        CLIENT_PLAY_OK,
+        CLIENT_SENDING_PAUSE,
+        CLIENT_PAUSE_OK,
+        CLIENT_SENDING_TEARDOWN,
+        CLIENT_RECEIVED_RESPONSE,
         CLIENT_DISCONNECTED,
         CLIENT_TIMEOUT,
         CLIENT_ERROR
@@ -41,7 +55,8 @@ namespace Overflow
     public:
         virtual ~IRtspDelegate() { };
         
-        virtual void onRtspClientStateChange(RtspClientState state) = 0;
+        virtual void onRtspClientStateChange(RtspClientState oldState,
+                                             RtspClientState newState) = 0;
 
         // Payload
         virtual void onPayload(const unsigned char * buffer,
@@ -49,19 +64,53 @@ namespace Overflow
 
         static std::string stateToString(RtspClientState state)
         {
+            std::string state_string;
             switch (state)
             {
+            case CLIENT_INITILIZED:
+                state_string = "initialized";
+                break;
             case CLIENT_CONNECTING:
-                return "connecting";
+                state_string = "connecting";
+                break;
+            case CLIENT_CONNECTED:
+                state_string = "connected";
+                break;
+            case CLIENT_SENDING_OPTIONS:
+                state_string = "sending-options-request";
+                break;
+            case CLIENT_OPTIONS_OK:
+                state_String = "options-ok";
+                break;
+            case CLIENT_SENDING_DESCRIBE:
+                state_string = "sending-describe-request";
+                break;
+            case CLIENT_SENDING_SETUP:
+                state_string = "sending-setup-request";
+                break;
+            case CLIENT_SENDING_PLAY:
+                state_string = "sending-play-request";
+                break;
+            case CLIENT_SENDING_PAUSE:
+                state_string = "sending-pause-request";
+                break;
+            case CLIENT_SENDING_TEARDOWN:
+                state_string = "sending-teardown-request";
+                break;
+            case CLIENT_RECEIVED_RESPONSE:
+                state_string = "received-response";
+                break;
             case CLIENT_DISCONNECTED:
-                return "disconnected";
+                state_string = "disconnected";
+                break;
             case CLIENT_TIMEOUT:
-                return "timeout";
+                state_string = "timeout";
+                break;
             case CLIENT_ERROR:
-                return "error";
-            };
-            
-            return std::string();
+                state_string = "error";
+                break;
+            };            
+            return state_string;
         }
     };    
 };

@@ -1,4 +1,4 @@
-// -*-c++-*-
+ // -*-c++-*-
 // Copyright (c) 2017 Philip Herron.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,41 +19,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <gtest/gtest.h>
-#include <glog/logging.h>
+#ifndef __RTSP_CLIENT_H__
+#define __RTSP_CLIENT_H__
 
-#include <RtspWanClient.h>
+#include "IRtspDelegate.h"
+#include "ITransportDelegate.h"
+#include "Transport.h"
 
-#include "Util.h"
 
-
-class Delegate: public Overflow::IRtspDelegate
-{        
-    void onRtspClientStateChange(Overflow::RtspClientState oldState,
-                                 Overflow::RtspClientState newState) override
+namespace Overflow
+{
+    class RtspClient : protected ITransportDelegate
     {
-        LOG(INFO) << "client-state-change: "
-                  << stateToString(oldState) << "::old - "
-                  << stateToString(newState) << "::new";
-    }
-    
-    void onPayload(const unsigned char * buffer, const size_t length) override
-    {
-        OverflowTest::Helpers::printOutAllNaluTypes (buffer, length);
-    }
+    public:
+        RtspClient(IRtspDelegate * const delegate,
+                   Transport const * transport);
+
+        virtual RtspClient() { }
+
+        void start() = 0;
+
+        void stop() = 0;
+
+    protected:
+
+    private:
+        RtspClientState mState;
+        RtspFactory mFactory;
+        std::thread* mEventLoop;
+    };
 };
 
-
-TEST(DEV, SCRATCH)
-{
-    OverflowTest::Helpers::setupTestLogger ();
-    
-    Delegate delegate;
-    Overflow::RtspWanClient client (&delegate, "rtsp://127.0.0.1:8554/test.264");
-    
-    bool ok = client.start ();
-    if (ok)
-        OverflowTest::Helpers::sleep (5);
-
-    client.stop();
-}
+#endif //__RTSP_CLIENT_H__

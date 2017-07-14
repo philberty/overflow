@@ -25,7 +25,6 @@
 #include "ITransportDelegate.h"
 #include "RtpPacket.h"
 #include "Response.h"
-#include "Queue.h"
 
 
 namespace Overflow
@@ -52,23 +51,21 @@ namespace Overflow
         virtual void shutdown() = 0;
 
     protected:
-        Response* waitForResponse(int timeout_millis, bool& elapsed)
-        {    
-            std::int64_t timeout_usecs = timeout_millis * 1000;
-            Response* resp = nullptr;
-            elapsed = mQueue.wait(resp, timeout_usecs);
-            return resp;
-        }
-
         void onStateChange(TransportState state)
         {
+            TransportState oldState = mState;
             mState = state;
-            notifyDelegateStateChange();
+            notifyDelegateStateChange(oldState, mState);
         }
 
         void onRtpPacket(const RtpPacket* packet)
         {
             notifyDelegateOfRtpPacket(packet);
+        }
+
+        void onRtspResponse(const Response* response)
+        {
+            notifyDelegateOfRtspResponse(response);
         }
 
         void onError(TransportErrorReason reason)
@@ -77,11 +74,11 @@ namespace Overflow
         }
         
     private:
-        void notifyDelegateStateChange()
+        void notifyDelegateStateChange(TransportState oldState, TransportState newState)
         {
             if (mDelegate != nullptr)
             {
-                mDelegate->onStateChange(mState);
+                mDelegate->onStateChange(oldState, newState);
             }
         }
 
@@ -93,6 +90,14 @@ namespace Overflow
             }   
         }
 
+        void notifyDelegateOfRtspResponse(const Response* response)
+        {
+            if (mDelegate != nullptr)
+            {
+                mDelegate->onRtspResponse(response);
+            }
+        }
+
         void notifyDelegateOfError(TransportErrorReason reason)
         {
             if (mDelegate != nullptr)
@@ -102,7 +107,6 @@ namespace Overflow
         }
         
         ITransportDelegate* const mDelegate;
-        Queue<Response*> mQueue;
         TransportState mState;
         TransportErrorReason mErrorReason;
     };

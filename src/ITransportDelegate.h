@@ -50,9 +50,50 @@ namespace Overflow
         // TODO: not implemented
         // virtual void onRtcpPacket(const RtcpPackate* packet) = 0;
 
-        virtual void onStateChange(TransportState state) = 0;
+        virtual void onRtspResponse(const Response* response) = 0;
+
+        virtual void onStateChange(TransportState oldState, TransportState newState) = 0;
         
         virtual void onTransportError(TransportErrorReason reason) = 0;
+
+        static std::string stateToString(TransportState state)
+        {
+            std::string state_string;
+            switch (state)
+            {
+            case CONNECTED:
+                state_string = "connected";
+                break;
+            case DISCONNECTED:
+                state_string =  "disconnected";
+                break;
+            case CONNECTING:
+                state_string = "connecting";
+                break;
+            case ERROR:
+                state_string = "error";
+                break;
+            }
+            return state_string;
+        }
+
+        static std::string stateToString(TransportErrorReason reason)
+        {
+            std::string reason_string;
+            switch (reason)
+            {
+            case SOCKET_ERROR:
+                reason_string = "socket-error";
+                break;
+            case UNKNOWN:
+                reason_string = "unknown";
+                break;
+            case OK:
+                reason_string = "all-ok";
+                break;
+            }
+            return reason_string;
+        }
     };
 };
 
