@@ -84,8 +84,9 @@ Overflow::InterleavedTcpTransport::write(const unsigned char *buffer,
 void
 Overflow::InterleavedTcpTransport::shutdown()
 {
-    mTcp.read_stop();
-    onStateChange(DISCONNECTED);
+    mTcp.shutdown([&](uvpp::error) {
+            onStateChange(DISCONNECTED);
+        });
 }
 
 bool
@@ -110,7 +111,7 @@ Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
     LOG(INFO) << "Connected: tcp://" << mHost << ":" << mPort;
 
     // start reading
-    mTcp.read_start(mReadHandler);
+    mTcp.read_start<1024>(mReadHandler);
 }
 
 void
@@ -213,6 +214,9 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
             onRtspResponse(&response);
             offset += rtsp_buffer_length;
         }
+        else
+            break;
+        
     } while (offset < length);
     
     return offset;

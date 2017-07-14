@@ -42,7 +42,7 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
 
 Overflow::RtspWanClient::~RtspWanClient()
 {
-    stop();
+    // stop();
 }
 
 bool
@@ -66,8 +66,9 @@ Overflow::RtspWanClient::stop()
     if (mEventLoop == nullptr)
         return;
 
-    LOG(INFO) << "Stopping RtspWanClient";
     uvpp::Async async(mLoop, [&]() {
+            LOG(INFO) << "stopping event-loop";
+            mTransport->shutdown();
             mLoop.stop();
             LOG(INFO) << "stopped event-loop core";
         });
