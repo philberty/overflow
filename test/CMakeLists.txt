@@ -30,6 +30,8 @@ add_executable(testrunner
 
 target_link_libraries(testrunner
   overflow
+  uv
+  glog
   gtest
   gmock
   ${CMAKE_DL_LIBS}

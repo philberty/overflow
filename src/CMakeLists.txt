@@ -103,14 +103,14 @@ add_library(overflow
   ${OVERFLOW_HEADERS}
   ${JNI_SOURCES}
 
-  $<TARGET_OBJECTS:uv_obj>
-  $<TARGET_OBJECTS:glog_obj>
+  # $<TARGET_OBJECTS:uv_obj>
+  # $<TARGET_OBJECTS:glog_obj>
   )
 
 add_dependencies(overflow uv glog)
 
 if(BUILD_JNI)
-  target_link_libraries (overflow ${JNI_LIBS})
+  target_link_libraries (overflow ${JNI_LIBS} uv glog)
 endif()
 
 install(TARGETS overflow
