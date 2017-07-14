@@ -22,31 +22,48 @@
 #ifndef __IRTSP_DELEGATE_H__
 #define __IRTSP_DELEGATE_H__
 
+#include <string>
 #include <cstddef>
 
 
-namespace Overflow {
-
-    class IRtspDelegate {
+namespace Overflow
+{
+    typedef enum
+    {
+        CLIENT_CONNECTING,
+        CLIENT_DISCONNECTED,
+        CLIENT_TIMEOUT,
+        CLIENT_ERROR
+    } RtspClientState;
+    
+    class IRtspDelegate
+    {
     public:
         virtual ~IRtspDelegate() { };
-
-        // Invalid Response
-        virtual void Invalid() { };
         
-        // Timeout
-        virtual void Timeout() = 0;
+        virtual void onRtspClientStateChange(RtspClientState state) = 0;
 
         // Payload
-        virtual void Payload(const unsigned char * buffer, const size_t length) = 0;
+        virtual void onPayload(const unsigned char * buffer,
+                               const size_t length) = 0;
 
-        // REDIRECT
-        virtual void ServerRedirect() { };
-
-        // ANNOUNCE
-        virtual void ServerAnnounce() { };
-    };
-    
+        static std::string stateToString(RtspClientState state)
+        {
+            switch (state)
+            {
+            case CLIENT_CONNECTING:
+                return "connecting";
+            case CLIENT_DISCONNECTED:
+                return "disconnected";
+            case CLIENT_TIMEOUT:
+                return "timeout";
+            case CLIENT_ERROR:
+                return "error";
+            };
+            
+            return std::string();
+        }
+    };    
 };
 
 #endif //__IRTSP_DELEGATE_H__

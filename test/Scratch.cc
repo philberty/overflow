@@ -29,29 +29,28 @@
 
 class Delegate: public Overflow::IRtspDelegate
 {        
-    void Timeout() override
+    void onRtspClientStateChange(Overflow::RtspClientState state) override
     {
-        LOG(INFO) << "TIMEOUT";
+        LOG(INFO) << "state-change: " << stateToString(state);
     }
-        
-    void Payload(const unsigned char * buffer, const size_t length) override
+    
+    void onPayload(const unsigned char * buffer, const size_t length) override
     {
-        OverflowTest::Helpers::PrintOutAllNaluTypes(buffer, length);
+        OverflowTest::Helpers::printOutAllNaluTypes (buffer, length);
     }
 };
 
 
 TEST(DEV, SCRATCH)
 {
-    OverflowTest::Helpers::SetupTestLogger();
+    OverflowTest::Helpers::setupTestLogger ();
     
     Delegate delegate;
-    Overflow::RtspWanClient client(&delegate, "rtsp://127.0.0.1:8554/test.264");
+    Overflow::RtspWanClient client (&delegate, "rtsp://127.0.0.1:8554/test.264");
     
-    bool ok = client.start();
-    if (ok) {
-        OverflowTest::Helpers::Sleep(10);
-    }
+    bool ok = client.start ();
+    if (ok)
+        OverflowTest::Helpers::sleep (10);
 
     client.stop();
 }

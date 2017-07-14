@@ -27,31 +27,37 @@
 #include <thread>
 #include <chrono>
 
-namespace OverflowTest {
 
-    class Helpers {
+namespace OverflowTest
+{
+    class Helpers
+    {
     public:
-        
-        static void SetupTestLogger() {
+        static void setupTestLogger ()
+        {
             FLAGS_logtostderr = 1;
-            google::InitGoogleLogging("Overflow Test");
+            google::InitGoogleLogging ("Overflow Test");
         }
 
-        static void Sleep(const unsigned int seconds) {
-            std::this_thread::sleep_for(std::chrono::seconds(seconds));
+        static void sleep (const unsigned int seconds)
+        {
+            std::this_thread::sleep_for (std::chrono::seconds(seconds));
         }
 
-        static void PrintOutAllNaluTypes(const unsigned char *buffer, size_t length) {
+        static void printOutAllNaluTypes (const unsigned char *buffer, size_t length)
+        {
             std::string nalus;
-        
-            size_t i;
-            for (i = 0; i < length - 4; ++i) {
-                if (buffer[i] == 0x00 && buffer[i+1] == 0x00 && buffer[i+2] == 0x01) {
-                    
-                    if (i > 0 && buffer[i - 1] == 0x00) {
+            for (size_t i = 0; i < length - 4; ++i)
+            {
+                if (buffer[i] == 0x00 && buffer[i+1] == 0x00 && buffer[i+2] == 0x01)
+                {    
+                    if (i > 0 && buffer[i - 1] == 0x00)
+                    {
                         int nalu_type = (buffer[i + 3] & 0x1F);
                         nalus += "[" + std::to_string(nalu_type) + "] ";
-                    } else {
+                    }
+                    else
+                    {
                         int nalu_type = (buffer[i + 3] & 0x1F);
                         nalus += "[" + std::to_string(nalu_type) + "] ";
                     }
@@ -59,10 +65,8 @@ namespace OverflowTest {
             }
             
             LOG(INFO) << "NALUS: " << nalus;
-        }
-        
+        }        
     };
-    
 };
 
 #endif //__UTIL_H__
