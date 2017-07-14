@@ -36,7 +36,8 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mTcpTransport(this, mLoop, url),
       mTransport(&mTcpTransport),
       mEventLoop(nullptr),
-      mState(CLIENT_INITILIZED)
+      mState(CLIENT_INITILIZED),
+      mServerAllowsAggregate(false)
 { }
 
 Overflow::RtspWanClient::~RtspWanClient()
@@ -103,6 +104,14 @@ Overflow::RtspWanClient::onRtspResponse(const Response* response)
     {
         onSetupResponse(response);
     }
+    else if (oldState == CLIENT_SENDING_PLAY)
+    {
+        onPlayResponse(response);
+    }
+    else if (oldState == CLIENT_SENDING_PAUSE)
+    {
+        onPauseResponse(response);
+    }
 }
 
 void
@@ -135,6 +144,7 @@ Overflow::RtspWanClient::onDescribeResponse(const Response* response)
     else
     {
         onStateChange(CLIENT_DESCRIBE_OK);
+        mPalette = resp.getSessionDescriptions()[0];
         sendSetupRequest();
     }
 }
@@ -142,7 +152,7 @@ Overflow::RtspWanClient::onDescribeResponse(const Response* response)
 void
 Overflow::RtspWanClient::onSetupResponse(const Response* response)
 {
-    // HANDLE DESCRIBE RESPONSE
+    // HANDLE SETUP RESPONSE
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
     SetupResponse resp(response);
@@ -150,7 +160,39 @@ Overflow::RtspWanClient::onSetupResponse(const Response* response)
     if (not resp.ok())
         onStateChange(CLIENT_ERROR);
     else
+    {
         onStateChange(CLIENT_SETUP_OK);
+        mSession = resp.getSession();
+        sendPlayRequest();
+    }
+}
+
+void
+Overflow::RtspWanClient::onPlayResponse(const Response* response)
+{
+    // HANDLE PLAY RESPONSE
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    RtspResponse resp(response);
+
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+        onStateChange(CLIENT_PLAY_OK);
+}
+
+void
+Overflow::RtspWanClient::onPauseResponse(const Response* response)
+{
+    // HANDLE PAUSE RESPONSE
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    RtspResponse resp(response);
+
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+        onStateChange(CLIENT_PAUSE_OK);
 }
 
 void
@@ -219,12 +261,60 @@ Overflow::RtspWanClient::sendDescribeRequest()
 void
 Overflow::RtspWanClient::sendSetupRequest()
 {
+    if (mPalette.getType() == RtspSessionType::UNKNOWN_PALETTE)
+    {
+        LOG(ERROR) << "unknown palette type: " << mPalette.getType();
+        onStateChange(CLIENT_ERROR);
+        return;
+    }
+    
     onStateChange(CLIENT_SENDING_SETUP);
+
+    // control url is where we put any more requests to
+    std::string setup_url = (mPalette.isControlUrlComplete()) ?
+        mPalette.getControl() :
+        mFactory.getPath() + "/" + mPalette.getControl();
+
+    LOG(INFO) << "SETUP URL: " << setup_url;
+    
+    // Gstreamer doesnt like using the control url for subsequent rtsp requests post setup
+    // only applicable in non complete control url's.
+    if (mServerAllowsAggregate && !mPalette.isControlUrlComplete())
+    {
+        // this is the new url we need to use for all requests now
+        mFactory.setPath(setup_url);
+    }
+    else if (mPalette.isControlUrlComplete())
+    {
+        mFactory.setPath(setup_url);
+    }
+
 
     Setup* setup = mFactory.setupRequest(
         mTransport->getTransportHeaderString());
     sendRtsp(setup);
+    
     delete setup;
+}
+
+void
+Overflow::RtspWanClient::sendPlayRequest()
+{
+    onStateChange(CLIENT_SENDING_PLAY);
+
+    Play* play = mFactory.playRequest(mSession);
+    sendRtsp(play);
+    delete play;
+}
+
+void
+Overflow::RtspWanClient::sendPauseRequest()
+{
+    onStateChange(CLIENT_SENDING_PAUSE);
+
+    Pause* pause = mFactory.pauseRequest(mSession);
+    sendRtsp(pause);
+    delete pause;
 }
 
 void

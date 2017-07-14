@@ -154,11 +154,6 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
         bool is_redirect = ((length - offset) > 8)
             and strncmp((const char*)buffer + offset, "REDIRECT", 8) == 0;
 
-        LOG(INFO) << "isRtp: " << is_rtp << " - "
-                  << "isRtsp: " << is_rtsp << " - "
-                  << "isAnnounce: " << is_announce << " - "
-                  << "isRedirect: " << is_redirect;
-
         if (is_announce)
         {
             // TODO

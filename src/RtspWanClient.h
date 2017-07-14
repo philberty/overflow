@@ -27,6 +27,7 @@
 #include "Transport.h"
 #include "InterleavedTcpTransport.h"
 #include "RtspFactory.h"
+#include "SessionDescription.h"
 
 #include <uvpp/loop.hpp>
 
@@ -46,6 +47,10 @@ namespace Overflow
         bool start();
 
         void stop();
+
+        void sendPlayRequest();
+
+        void sendPauseRequest();
 
     protected:
         void onRtpPacket(const RtpPacket* packet) override;
@@ -78,6 +83,10 @@ namespace Overflow
 
         void onSetupResponse(const Response* response);
 
+        void onPlayResponse(const Response* response);
+
+        void onPauseResponse(const Response* response);
+
         IRtspDelegate* mDelegate;
         std::string mUrl;
         RtspFactory mFactory;
@@ -86,6 +95,9 @@ namespace Overflow
         Transport* mTransport;
         std::thread* mEventLoop;
         RtspClientState mState;
+        SessionDescription mPalette;
+        bool mServerAllowsAggregate;
+        std::string mSession;
     };
     
 };
