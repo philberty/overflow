@@ -22,6 +22,8 @@
 #ifndef __IRTSP_DELEGATE_H__
 #define __IRTSP_DELEGATE_H__
 
+#include "SessionDescription.h"
+
 #include <string>
 #include <cstddef>
 
@@ -54,6 +56,8 @@ namespace Overflow
     {
     public:
         virtual ~IRtspDelegate() { };
+
+        virtual void onPaletteType(RtspSessionType type) = 0;
         
         virtual void onRtspClientStateChange(RtspClientState oldState,
                                              RtspClientState newState) = 0;

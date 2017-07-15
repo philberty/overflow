@@ -122,6 +122,27 @@ namespace Overflow
             return UNKNOWN_PALETTE;
         }
 
+        static std::string typeToString(RtspSessionType type)
+        {
+            std::string typeString;
+            switch (type)
+            {
+            case H264:
+                typeString = "H264";
+                break;
+            case MP4V:
+                typeString = "MP4V";
+                break;
+            case MJPEG:
+                typeString = "MJPEG";
+                break;
+            case UNKNOWN_PALETTE:
+                typeString = "UNKNOWN";
+                break;
+            }
+            return typeString;
+        }
+
     protected:
         RtspSessionType mType;
         std::string mControl;

@@ -24,7 +24,10 @@
 #include "SetupResponse.h"
 
 #include "H264Depacketizer.h"
+#include "MP4VDepacketizer.h"
+#include "MJPEGDepacketizer.h"
 
+#include <chrono>
 #include <glog/logging.h>
 #include <uvpp/async.hpp>
 
@@ -35,6 +38,8 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mUrl(url),
       mFactory(url),
       mLoop(),
+      mKeepAliveTimer(mLoop),
+      mRtspRequestTimeoutTimer(mLoop),
       mTcpTransport(this, mLoop, url),
       mTransport(&mTcpTransport),
       mEventLoop(nullptr),
@@ -57,7 +62,7 @@ Overflow::RtspWanClient::start()
                 LOG(INFO) << "event-loop started on:  " << std::this_thread::get_id();
                 mTransport->connect ();
                 mLoop.run ();
-            } catch(std::exception& e) {
+            } catch (std::exception& e) {
                 LOG(INFO) << "exception from event loop: [" << e.what() << "]";
             }
         });
@@ -72,6 +77,7 @@ Overflow::RtspWanClient::stop()
     uvpp::Async async(mLoop, [&]() {
             LOG(INFO) << "stopping event-loop";
             mTransport->shutdown();
+            mKeepAliveTimer.stop();
             mLoop.stop();
             LOG(INFO) << "stopped event-loop core";
         });
@@ -87,28 +93,31 @@ Overflow::RtspWanClient::stop()
 void
 Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
 {
-    int seq_num = packet->getSequenceNumber();
+    int seq_num = packet->getSequenceNumber ();
     bool initialized_last_seq_num = mLastSeqNum != -1;
-    if (not initialized_last_seq_num)
+    
+    if (initialized_last_seq_num)
     {
-        mLastSeqNum = seq_num - 1;
+        bool out_of_sequence = (mLastSeqNum + 1) != seq_num;
+        if (out_of_sequence) {
+            LOG(ERROR) << "out of sequence rtp-packets: " << mLastSeqNum << "[LAST] - " << seq_num << "[CURRENT]";
+            onStateChange(CLIENT_ERROR);
+        }
     }
-
-    // ffserver doesnt seem to like keeping things in sequence with my test.264
-    
-    // bool out_of_sequence = (mLastSeqNum + 1) != seq_num;
-    // if (out_of_sequence) {
-    //     LOG(ERROR) << "out of sequence rtp-packets: " << mLastSeqNum << "[LAST] - " << seq_num << "[CURRENT]";
-    //     onStateChange(CLIENT_ERROR);
-    //     return;
-    // }
-    
     mLastSeqNum = seq_num;
 
     switch (mPalette.getType())
     {
     case H264:
         processH264Packet(packet);
+        break;
+
+    case MP4V:
+        processMP4VPacket(packet);
+        break;
+
+    case MJPEG:
+        processMJPEGPacket(packet);
         break;
         
     default:
@@ -135,6 +144,25 @@ Overflow::RtspWanClient::processH264Packet(const RtpPacket* packet)
     size_t payload_size = depacketizer.length();
 
     appendPayloadToCurrentFrame(payload, payload_size);
+}
+
+void
+Overflow::RtspWanClient::processMP4VPacket(const RtpPacket* packet)
+{
+    MP4VDepacketizer depacketizer(&mPalette, packet, mIsFirstPayload);
+
+    const unsigned char *payload = depacketizer.bytes();
+    size_t payload_size = depacketizer.length();
+
+    appendPayloadToCurrentFrame(payload, payload_size);
+}
+
+void
+Overflow::RtspWanClient::processMJPEGPacket(const RtpPacket* packet)
+{
+    MJPEGDepacketizer depacketizer(&mPalette, packet, mIsFirstPayload);
+
+    depacketizer.addToFrame(&mCurrentFrame);
 }
 
 size_t
@@ -232,6 +260,7 @@ Overflow::RtspWanClient::onDescribeResponse(const Response* response)
     {
         onStateChange(CLIENT_DESCRIBE_OK);
         mPalette = resp.getSessionDescriptions()[0];
+        notifyDelegateOfPaletteType();
         sendSetupRequest();
     }
 }
@@ -242,15 +271,24 @@ Overflow::RtspWanClient::onSetupResponse(const Response* response)
     // HANDLE SETUP RESPONSE
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
-    SetupResponse resp(response);
 
-    if (not resp.ok())
-        onStateChange(CLIENT_ERROR);
-    else
+    try
     {
-        onStateChange(CLIENT_SETUP_OK);
-        mSession = resp.getSession();
-        sendPlayRequest();
+        SetupResponse resp(response);       
+        
+        if (not resp.ok())
+            onStateChange(CLIENT_ERROR);
+        else
+        {
+            onStateChange(CLIENT_SETUP_OK);
+            mSession = resp.getSession();
+            startKeepAliveTimer(resp.getTimeoutSeconds());
+            // sendPlayRequest();
+        }
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "setup-response: " << e.what();
     }
 }
 
@@ -287,8 +325,9 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
                                        TransportState newState)
 {
     LOG(INFO) << "transport-state-change: "
-              <<  stateToString(oldState) << "::old-state - "
-              << stateToString(newState) << "::new-state";
+              <<  stateToString(oldState)
+              << " -> "
+              << stateToString(newState);
 
     if (newState == CONNECTING)
         onStateChange(CLIENT_CONNECTING);
@@ -361,8 +400,6 @@ Overflow::RtspWanClient::sendSetupRequest()
     std::string setup_url = (mPalette.isControlUrlComplete()) ?
         mPalette.getControl() :
         mFactory.getPath() + "/" + mPalette.getControl();
-
-    LOG(INFO) << "SETUP URL: " << setup_url;
     
     // Gstreamer doesnt like using the control url for subsequent rtsp requests post setup
     // only applicable in non complete control url's.
@@ -376,11 +413,9 @@ Overflow::RtspWanClient::sendSetupRequest()
         mFactory.setPath(setup_url);
     }
 
-
     Setup* setup = mFactory.setupRequest(
         mTransport->getTransportHeaderString());
     sendRtsp(setup);
-    
     delete setup;
 }
 
@@ -405,10 +440,36 @@ Overflow::RtspWanClient::sendPauseRequest()
 }
 
 void
+Overflow::RtspWanClient::sendTeardownRequest()
+{
+    Teardown* teardown = mFactory.teardownRequest(mSession);
+    sendRtsp(teardown);
+    delete teardown;
+}
+
+void
 Overflow::RtspWanClient::sendRtsp(Rtsp* request)
 {
     const ByteBuffer& buf = request->getBuffer();
 
     mTransport->write(buf.bytesPointer(),
                       buf.length());
+}
+
+void
+Overflow::RtspWanClient::startKeepAliveTimer(int seconds)
+{
+    mKeepAliveTimer.start([&]() {
+            // sendOptionsRequest ();
+            LOG(INFO) << "KEEP-ALIVE";
+        },
+        std::chrono::duration<uint64_t, std::milli>(5000),
+        std::chrono::duration<uint64_t, std::milli>(1000));
+}
+
+void
+Overflow::RtspWanClient::notifyDelegateOfPaletteType()
+{
+    if (mDelegate != nullptr)
+        mDelegate->onPaletteType(mPalette.getType());
 }

@@ -28,13 +28,20 @@
 
 
 class Delegate: public Overflow::IRtspDelegate
-{        
+{
+    void onPaletteType(Overflow::RtspSessionType type)
+    {
+        LOG(INFO) << "palette-type: "
+                  << Overflow::SessionDescription::typeToString(type);
+    }
+    
     void onRtspClientStateChange(Overflow::RtspClientState oldState,
                                  Overflow::RtspClientState newState) override
     {
         LOG(INFO) << "client-state-change: "
-                  << stateToString(oldState) << "::old - "
-                  << stateToString(newState) << "::new";
+                  << stateToString(oldState)
+                  << " -> "
+                  << stateToString(newState);
     }
     
     void onPayload(const unsigned char * buffer, const size_t length) override
@@ -52,6 +59,6 @@ TEST(DEV, SCRATCH)
     Overflow::RtspWanClient client (&delegate, "rtsp://127.0.0.1:8554/test.264");
     
     client.start ();
-    OverflowTest::Helpers::sleep (5);
+    OverflowTest::Helpers::sleep (20);
     client.stop();
 }

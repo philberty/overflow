@@ -30,6 +30,7 @@
 #include "SessionDescription.h"
 
 #include <uvpp/loop.hpp>
+#include <uvpp/timer.hpp>
 
 #include <string>
 #include <thread>
@@ -70,7 +71,13 @@ namespace Overflow
 
         void notifyDelegateOfPayload();
 
+        void notifyDelegateOfPaletteType();
+
         void processH264Packet(const RtpPacket* packet);
+
+        void processMP4VPacket(const RtpPacket* packet);
+
+        void processMJPEGPacket(const RtpPacket* packet);
 
         void resetCurrentPayload();
 
@@ -99,10 +106,16 @@ namespace Overflow
 
         void onPauseResponse(const Response* response);
 
+        void sendTeardownRequest();
+
+        void startKeepAliveTimer(int seconds);
+
         IRtspDelegate* mDelegate;
         std::string mUrl;
         RtspFactory mFactory;
         uvpp::loop mLoop;
+        uvpp::Timer mKeepAliveTimer;
+        uvpp::Timer mRtspRequestTimeoutTimer;
         InterleavedTcpTransport mTcpTransport;
         Transport* mTransport;
         std::thread* mEventLoop;
