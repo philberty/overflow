@@ -1,5 +1,4 @@
 include_directories(
-  ${PROJECT_SOURCE_DIR}/ext/concurrentqueue
   ${PROJECT_SOURCE_DIR}/ext/libuv-cmake/libuv/include
   ${PROJECT_SOURCE_DIR}/ext/uvpp/include
   ${PROJECT_SOURCE_DIR}/ext/uri/include
@@ -14,7 +13,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2")
 set(JNI_SOURCES)
 set(JNI_LIBS)
 if(BUILD_JNI)
-
   set(ANDROID_NDK_PLATFORM_LIBS)
   if(ANDROID_ABI STREQUAL "armeabi")    
     set(ANDROID_NDK_PLATFORM_LIBS
@@ -49,38 +47,33 @@ if(BUILD_JNI)
 endif()
 
 set(OVERFLOW_HEADERS
-  RtspWanClient.h
-  IRtspDelegate.h
-  ITransportDelegate.h
-
-  Rtsp.h
-  Describe.h
-  Setup.h
-  Play.h
-  Pause.h
-  Options.h
-  Teardown.h
-
-  RtspFactory.h
-
+  ByteBuffer.h
   InterleavedTcpTransport.h
-
+  Options.h
+  SessionDescriptionFactory.h
+  Teardown.h
+  Describe.h
+  Pause.h
+  Play.h
+  Setup.h
+  Rtsp.h
+  IRtspDelegate.h
+  RtspFactory.h
+  SessionDescription.h
+  Transport.h
+  DescribeResponse.h
+  ITransportDelegate.h
+  SessionDescriptionV0.h
+  Url.h
+  H264Depacketizer.h
+  MJPEGDepacketizer.h
   Response.h
   RtspResponse.h
-  DescribeResponse.h
-  SetupResponse.h
-
-  SessionDescription.h
-  SessionDescriptionV0.h
-  SessionDescriptionFactory.h
-
-  H264Depacketizer.h
-  MP4VDepacketizer.h
-  MJPEGDepacketizer.h
- 
-  RtpPacket.h
-  ByteBuffer.h
   Helpers.h
+  MP4VDepacketizer.h
+  RtpPacket.h
+  RtspWanClient.h
+  SetupResponse.h
 )
 
 add_library(overflow 

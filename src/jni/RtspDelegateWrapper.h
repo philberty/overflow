@@ -20,16 +20,19 @@
 // THE SOFTWARE.
 
 
-#ifndef RTSP_DELEGATE_WRAPPER_JNI
-#define RTSP_DELEGATE_WRAPPER_JNI
+#ifndef __RTSP_DELEGATE_WRAPPER_JNI__
+#define __RTSP_DELEGATE_WRAPPER_JNI__
 
 #include "../IRtspDelegate.h"
 
 #include <glog/logging.h>
 #include <jni.h>
 
-namespace OverflowJni {
-    class RtspDelegateWrapper: public Overflow::IRtspDelegate {
+
+namespace OverflowJni
+{
+    class RtspDelegateWrapper: public Overflow::IRtspDelegate
+    {
     public:
         RtspDelegateWrapper(JNIEnv *env, jobject jdelegate)
         {
