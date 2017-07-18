@@ -152,7 +152,7 @@ Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
         return;
     }
 
-    mIsFirstPayload = true;
+    mIsFirstPayload = false;
     if (not packet->isMarked())
         return;
 
