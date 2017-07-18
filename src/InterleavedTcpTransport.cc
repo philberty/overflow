@@ -117,6 +117,13 @@ Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
 void
 Overflow::InterleavedTcpTransport::readHandler(const char* buf, ssize_t len)
 {
+    bool isEof = buf == NULL or len < 0;
+    if (isEof)
+    {
+        onStateChange(DISCONNECTED);
+        return;
+    }
+    
     std::vector<unsigned char> response;
     if (mReceivedBuffer.size() > 0)
     {
@@ -125,7 +132,7 @@ Overflow::InterleavedTcpTransport::readHandler(const char* buf, ssize_t len)
         mReceivedBuffer.clear ();
         mReceivedBuffer.resize (0);
     }
-
+    
     size_t response_offset = response.size ();
     size_t total_buffer_size = response_offset + len;
     response.resize(total_buffer_size);
