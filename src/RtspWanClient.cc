@@ -46,62 +46,87 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mState(CLIENT_INITILIZED),
       mServerAllowsAggregate(false),
       mLastSeqNum(-1),
-      mIsFirstPayload(true)
+      mIsFirstPayload(true),
+      mStopEventLoopHandler([&]() { stopEventLoop(); }),
+      mStopEventLoop(mLoop, mStopEventLoopHandler)
 { }
 
 Overflow::RtspWanClient::~RtspWanClient()
 {
     stop();
+    join();
 }
 
 void
 Overflow::RtspWanClient::start()
 {
-    mEventLoop = new std::thread([&]() {
-            try {
-                LOG(INFO) << "event-loop started on:  " << std::this_thread::get_id();
-                mTransport->connect ();
-                mLoop.run ();
-            } catch (std::exception& e) {
-                LOG(INFO) << "exception from event loop: [" << e.what() << "]";
-            }
-        });
+    if (not isRunning())
+        mEventLoop = new std::thread([&]() { eventLoopMain(); });
+}
+
+void
+Overflow::RtspWanClient::eventLoopMain()
+{
+    try
+    {
+        auto mEventThreadId = std::this_thread::get_id();
+        LOG(INFO) << "event-loop started on:  " << mEventThreadId;
+        mTransport->connect ();
+        mLoop.run ();
+    }
+    catch (std::exception& e)
+    {
+        LOG(INFO) << "exception from event loop: [" << e.what() << "]";
+        onStateChange(CLIENT_ERROR);
+    }
 }
 
 void
 Overflow::RtspWanClient::stop()
 {
-    if (mEventLoop == nullptr)
+    if (isRunning())
+        mStopEventLoop.send();
+}
+
+void
+Overflow::RtspWanClient::stopEventLoop()
+{
+    LOG(INFO) << "stopping event-loop";
+    mTransport->shutdown();
+    mKeepAliveTimer.stop();
+    mLoop.stop();
+    LOG(INFO) << "stopped event-loop core";
+}
+
+void
+Overflow::RtspWanClient::join()
+{
+    if (not isRunning())
         return;
 
-    uvpp::Async async(mLoop, [&]() {
-            LOG(INFO) << "stopping event-loop";
-            mTransport->shutdown();
-            mKeepAliveTimer.stop();
-            mLoop.stop();
-            LOG(INFO) << "stopped event-loop core";
-        });
-    async.send();
-    
     mEventLoop->join();
-    delete mEventLoop;
     mEventLoop = nullptr;
-    
-    LOG(INFO) << "stopped event-loop thread";
+}
+
+bool
+Overflow::RtspWanClient::isRunning() const
+{
+    return mEventLoop != nullptr and mEventLoop->joinable();
 }
 
 void
 Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
 {
     int seq_num = packet->getSequenceNumber ();
-    bool initialized_last_seq_num = mLastSeqNum != -1;
-    
+    bool initialized_last_seq_num = mLastSeqNum != -1;    
     if (initialized_last_seq_num)
     {
         bool out_of_sequence = (mLastSeqNum + 1) != seq_num;
-        if (out_of_sequence) {
-            LOG(ERROR) << "out of sequence rtp-packets: " << mLastSeqNum << "[LAST] - " << seq_num << "[CURRENT]";
-            onStateChange(CLIENT_ERROR);
+        if (out_of_sequence)
+        {
+            LOG(ERROR) << "out of sequence rtp-packets: "
+                       << mLastSeqNum << "[LAST] - "
+                       << seq_num << "[CURRENT]";
         }
     }
     mLastSeqNum = seq_num;
@@ -207,6 +232,7 @@ Overflow::RtspWanClient::onRtspResponse(const Response* response)
     RtspClientState oldState = mState;
     onStateChange(CLIENT_RECEIVED_RESPONSE);
 
+    RtspResponse rtsp(response);
     if (oldState == CLIENT_SENDING_OPTIONS)
     {
         onOptionsResponse(response);
@@ -227,6 +253,16 @@ Overflow::RtspWanClient::onRtspResponse(const Response* response)
     {
         onPauseResponse(response);
     }
+    else
+    {
+        LOG(INFO) << response->getStringBuffer();
+        
+        onStateChange(
+            rtsp.ok() ?
+              CLIENT_RECEIVED_RESPONSE
+            : CLIENT_ERROR
+            );
+    }
 }
 
 void
@@ -242,7 +278,9 @@ Overflow::RtspWanClient::onOptionsResponse(const Response* response)
     else
     {
         onStateChange(CLIENT_OPTIONS_OK);
-        sendDescribeRequest();
+
+        if (mPalette.getType () == UNKNOWN_PALETTE)
+            sendDescribeRequest();
     }
 }
 
@@ -271,7 +309,6 @@ Overflow::RtspWanClient::onSetupResponse(const Response* response)
     // HANDLE SETUP RESPONSE
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
-
     try
     {
         SetupResponse resp(response);       
@@ -283,12 +320,13 @@ Overflow::RtspWanClient::onSetupResponse(const Response* response)
             onStateChange(CLIENT_SETUP_OK);
             mSession = resp.getSession();
             startKeepAliveTimer(resp.getTimeoutSeconds());
-            // sendPlayRequest();
+            sendPlayRequest();
         }
     }
     catch (std::exception& e)
     {
         LOG(ERROR) << "setup-response: " << e.what();
+        onStateChange(CLIENT_ERROR);
     }
 }
 
@@ -299,11 +337,7 @@ Overflow::RtspWanClient::onPlayResponse(const Response* response)
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
     RtspResponse resp(response);
-
-    if (not resp.ok())
-        onStateChange(CLIENT_ERROR);
-    else
-        onStateChange(CLIENT_PLAY_OK);
+    onStateChange(resp.ok() ? CLIENT_PLAY_OK :CLIENT_ERROR);
 }
 
 void
@@ -313,11 +347,7 @@ Overflow::RtspWanClient::onPauseResponse(const Response* response)
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
     RtspResponse resp(response);
-
-    if (not resp.ok())
-        onStateChange(CLIENT_ERROR);
-    else
-        onStateChange(CLIENT_PAUSE_OK);
+    onStateChange(resp.ok() ? CLIENT_PLAY_OK :CLIENT_ERROR);
 }
 
 void
@@ -345,6 +375,7 @@ void
 Overflow::RtspWanClient::onTransportError(TransportErrorReason reason)
 {
     LOG(INFO) << "transport-error: " << stateToString(reason);
+    onStateChange(CLIENT_ERROR);
 }
 
 void
@@ -459,12 +490,12 @@ Overflow::RtspWanClient::sendRtsp(Rtsp* request)
 void
 Overflow::RtspWanClient::startKeepAliveTimer(int seconds)
 {
-    mKeepAliveTimer.start([&]() {
-            // sendOptionsRequest ();
-            LOG(INFO) << "KEEP-ALIVE";
-        },
-        std::chrono::duration<uint64_t, std::milli>(5000),
-        std::chrono::duration<uint64_t, std::milli>(1000));
+    // trim a few seconds to ensure keep-alive is sent in time
+    uint64_t timeout = (seconds - 5) * 1000;
+    
+    mKeepAliveTimer.start([&]() { sendOptionsRequest (); },
+        std::chrono::duration<uint64_t, std::milli>(timeout),
+        std::chrono::duration<uint64_t, std::milli>(timeout));
 }
 
 void

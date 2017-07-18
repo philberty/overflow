@@ -60,5 +60,6 @@ TEST(DEV, SCRATCH)
     
     client.start ();
     OverflowTest::Helpers::sleep (20);
-    client.stop();
+    client.stop ();
+    client.join ();
 }

@@ -31,6 +31,7 @@
 
 #include <uvpp/loop.hpp>
 #include <uvpp/timer.hpp>
+#include <uvpp/async.hpp>
 
 #include <string>
 #include <thread>
@@ -49,6 +50,10 @@ namespace Overflow
 
         void stop();
 
+        void join();
+
+        bool isRunning() const;
+
         void sendPlayRequest();
 
         void sendPauseRequest();
@@ -65,6 +70,10 @@ namespace Overflow
         void onTransportError(TransportErrorReason reason) override;
 
     private:
+        void eventLoopMain();
+        
+        void stopEventLoop();
+        
         void sendRtsp(Rtsp* request);
         
         void onStateChange(RtspClientState state);
@@ -126,6 +135,9 @@ namespace Overflow
         int mLastSeqNum;
         bool mIsFirstPayload;
         std::vector<unsigned char> mCurrentFrame;
+
+        std::function<void ()> mStopEventLoopHandler;
+        uvpp::Async mStopEventLoop;
     };
     
 };

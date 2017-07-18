@@ -22,14 +22,10 @@
 #ifndef __RTSP_CLIENT_H__
 #define __RTSP_CLIENT_H__
 
-#include "IRtspDelegate.h"
-#include "ITransportDelegate.h"
-#include "Transport.h"
-
 
 namespace Overflow
 {
-    class RtspClient : protected ITransportDelegate
+    class RtspClient : 
     {
     public:
         RtspClient(IRtspDelegate * const delegate,

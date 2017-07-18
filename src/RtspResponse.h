@@ -28,9 +28,10 @@
 #include <string>
 
 
-namespace Overflow {
-
-    class RtspResponse {
+namespace Overflow
+{
+    class RtspResponse
+    {
     public:
         RtspResponse(const Response* resp);
 
@@ -59,7 +60,6 @@ namespace Overflow {
         std::string mBody;
         std::map<std::string, std::string> mHeaders;
     };
-    
 };
 
 #endif //__RTSP_RESPONSE_H__
