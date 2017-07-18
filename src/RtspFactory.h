@@ -51,7 +51,7 @@ namespace Overflow
 
         void setPath(std::string& path);
 
-        const std::string& getPath();
+        const std::string& getPath() const;
 
         void setUrl(const std::string& url);
 

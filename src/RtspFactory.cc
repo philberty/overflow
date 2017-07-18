@@ -99,7 +99,7 @@ Overflow::RtspFactory::setPath(std::string& path)
 }
 
 const std::string&
-Overflow::RtspFactory::getPath()
+Overflow::RtspFactory::getPath() const
 {
     return mPath;
 }
@@ -116,8 +116,13 @@ Overflow::RtspFactory::setUrl(const std::string& url)
         +  uri.getPath();
             
     mPath.assign(path_buffer);
-            
-    if (uri.hasAuth())
+
+    // ensure auth is updated
+    if (not uri.hasAuth())
+    {
+        mAuth64.assign("");
+    }
+    else
     {
         const std::string& auth = uri.getAuth();
         mAuth64.assign(base64::encode(auth.c_str(), auth.length()));
