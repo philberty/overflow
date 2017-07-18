@@ -132,9 +132,12 @@ Overflow::InterleavedTcpTransport::readHandler(const char* buf, ssize_t len)
     std::copy(buf, buf + len, response.begin() + response_offset);
 
     size_t read_size = readResponse(&(response[0]), response.size());
-    size_t trailing_length = total_buffer_size - read_size;
-    mReceivedBuffer.resize (trailing_length);
-    std::copy(response.begin() + read_size, response.end(), mReceivedBuffer.begin());
+    if (read_size < total_buffer_size)
+    {
+        size_t trailing_length = total_buffer_size - read_size;
+        mReceivedBuffer.resize (trailing_length);
+        std::copy(response.begin() + read_size, response.end(), mReceivedBuffer.begin());
+    }
 }
 
 size_t
