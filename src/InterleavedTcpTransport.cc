@@ -84,6 +84,7 @@ Overflow::InterleavedTcpTransport::write(const unsigned char *buffer,
 void
 Overflow::InterleavedTcpTransport::shutdown()
 {
+    mTcp.read_stop();
     mTcp.shutdown([&](uvpp::error) {
             onStateChange(DISCONNECTED);
         });

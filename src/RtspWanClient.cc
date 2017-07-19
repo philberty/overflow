@@ -279,7 +279,8 @@ Overflow::RtspWanClient::onOptionsResponse(const Response* response)
     {
         onStateChange(CLIENT_OPTIONS_OK);
 
-        if (mPalette.getType () == UNKNOWN_PALETTE)
+        bool haveSession = not mSession.empty();
+        if (not haveSession)
             sendDescribeRequest();
     }
 }
@@ -364,10 +365,16 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
     else if (newState == CONNECTED)
         onStateChange(CLIENT_CONNECTED);
 
-    if (oldState == CONNECTING and newState == CONNECTED)
+    if (newState == CONNECTED)
     {
         // SEND OPTIONS
         sendOptionsRequest();
+    }
+    else if (newState == DISCONNECTED)
+    {
+        mSession.clear();
+
+        
     }
 }
 
