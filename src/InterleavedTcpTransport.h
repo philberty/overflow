@@ -40,6 +40,8 @@ namespace Overflow
                                 uvpp::loop& loop,
                                 const std::string& url);
 
+        virtual ~InterleavedTcpTransport() { }
+
         void setRtpInterleavedChannel(int channel);
 
         void setRtcpInterleavedChannel(int channel);
