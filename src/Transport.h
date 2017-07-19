@@ -38,6 +38,8 @@ namespace Overflow
               mErrorReason(OK)
         { }
 
+        virtual ~Transport() { }
+
         TransportState getState() const { return mState; }
 
         bool isRunning() const { return getState() == CONNECTED; }
