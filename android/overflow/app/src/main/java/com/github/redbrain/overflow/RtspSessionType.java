@@ -20,17 +20,24 @@
 
 package com.github.redbrain.overflow;
 
-import java.nio.ByteBuffer;
-
-
-public interface RtspClientDelegate
+public enum RtspClientState
 {
-    void onPaletteType(RtspSessionType type);
-        
-    void onRtspClientStateChange(RtspClientState oldState,
-                                 RtspClientState newState);
-
-    void onRtpPacketExtension(int id, ByteBuffer buffer);
-        
-    void onPayload(ByteBuffer buffer);    
+    CLIENT_INITILIZED,
+    CLIENT_CONNECTING,
+    CLIENT_CONNECTED,
+    CLIENT_SENDING_OPTIONS,
+    CLIENT_OPTIONS_OK,
+    CLIENT_SENDING_DESCRIBE,
+    CLIENT_DESCRIBE_OK,
+    CLIENT_SENDING_SETUP,
+    CLIENT_SETUP_OK,
+    CLIENT_SENDING_PLAY,
+    CLIENT_PLAY_OK,
+    CLIENT_SENDING_PAUSE,
+    CLIENT_PAUSE_OK,
+    CLIENT_SENDING_TEARDOWN,
+    CLIENT_RECEIVED_RESPONSE,
+    CLIENT_DISCONNECTED,
+    CLIENT_TIMEOUT,
+    CLIENT_ERROR
 }
