@@ -22,6 +22,8 @@
 #ifndef __TRANSPORT_H__
 #define __TRANSPORT_H__
 
+#include <functional>
+
 #include "ITransportDelegate.h"
 #include "RtpPacket.h"
 #include "Response.h"
@@ -48,9 +50,9 @@ namespace Overflow
 
         virtual std::string getTransportHeaderString() const = 0;
 
-        virtual bool connect() = 0;
+        virtual void start() = 0;
 
-        virtual void shutdown() = 0;
+        virtual void stop() = 0;
 
     protected:
         void onStateChange(TransportState state)
@@ -98,6 +100,7 @@ namespace Overflow
             {
                 mDelegate->onRtspResponse(response);
             }
+            
         }
 
         void notifyDelegateOfError(TransportErrorReason reason)

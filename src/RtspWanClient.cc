@@ -29,7 +29,6 @@
 
 #include <chrono>
 #include <glog/logging.h>
-#include <uvpp/async.hpp>
 
 
 Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
@@ -40,15 +39,22 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mLoop(),
       mKeepAliveTimer(mLoop),
       mRtspRequestTimeoutTimer(mLoop),
-      mTcpTransport(this, mLoop, url),
-      mTransport(&mTcpTransport),
+      mReconnectTimer(mLoop),
+      mWorkers(mLoop),
+      mTcpTransport(nullptr),
+      mTransport(nullptr),
       mEventLoop(nullptr),
       mState(CLIENT_INITILIZED),
       mServerAllowsAggregate(false),
       mLastSeqNum(-1),
       mIsFirstPayload(true),
       mStopEventLoopHandler([&]() { stopEventLoop(); }),
-      mStopEventLoop(mLoop, mStopEventLoopHandler)
+      mReconnectHandler([&]() { startReconnectTimer(); }),
+      mStopTransportHandler([&]() { stopTransport(); }),
+      mStopEventLoop(mLoop, mStopEventLoopHandler),
+      mReconnect(mLoop, mReconnectHandler),
+      mStopTransport(mLoop, mStopTransportHandler),
+      mIsReconnecting(false)
 { }
 
 Overflow::RtspWanClient::~RtspWanClient()
@@ -71,7 +77,7 @@ Overflow::RtspWanClient::eventLoopMain()
     {
         auto mEventThreadId = std::this_thread::get_id();
         LOG(INFO) << "event-loop started on:  " << mEventThreadId;
-        mTransport->connect ();
+        startTransport ();
         mLoop.run ();
     }
     catch (std::exception& e)
@@ -92,7 +98,8 @@ void
 Overflow::RtspWanClient::stopEventLoop()
 {
     LOG(INFO) << "stopping event-loop";
-    mTransport->shutdown();
+    mReconnectTimer.stop ();
+    stopTransport();
     mKeepAliveTimer.stop();
     mLoop.stop();
     LOG(INFO) << "stopped event-loop core";
@@ -105,7 +112,33 @@ Overflow::RtspWanClient::join()
         return;
 
     mEventLoop->join();
+    delete mEventLoop;
     mEventLoop = nullptr;
+}
+
+void
+Overflow::RtspWanClient::startTransport()
+{   
+    mWorkers.execute([&]() {
+            mTcpTransport = new InterleavedTcpTransport(this, mUrl);
+            mTransport = mTcpTransport;
+            mTransport->start ();
+        },
+        [&](uvpp::error) {
+            std::lock_guard<std::mutex> guard(mMutex);
+            delete mTcpTransport;
+            mTransport = mTcpTransport = nullptr;
+        });
+}
+
+void
+Overflow::RtspWanClient::stopTransport()
+{
+    std::lock_guard<std::mutex> guard(mMutex);
+    if (mTransport == nullptr)
+        return;
+
+    mTransport->stop ();
 }
 
 bool
@@ -367,15 +400,39 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
 
     if (newState == CONNECTED)
     {
+        mIsReconnecting = false;
+        mReconnectTimer.stop();
+        
         // SEND OPTIONS
         sendOptionsRequest();
     }
     else if (newState == DISCONNECTED)
     {
-        mSession.clear();
+        mSession.clear ();
+        resetCurrentPayload ();
+        mLastSeqNum = -1;
+        mIsFirstPayload = true;
 
-        
+        // reconnect
+        mStopTransport.send();
+        if (not mIsReconnecting)
+            mReconnect.send();
     }
+}
+
+void
+Overflow::RtspWanClient::startReconnectTimer()
+{
+    LOG(INFO) << "starting-reconnect-timer";
+    
+    mIsReconnecting = true;
+    
+    uint64_t timeout = 3 * 1000;
+    mReconnectTimer.start([&]() { 
+            startTransport ();
+        },
+        std::chrono::duration<uint64_t, std::milli>(timeout),
+        std::chrono::duration<uint64_t, std::milli>(timeout));
 }
 
 void

@@ -28,14 +28,16 @@
 
 
 Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * const delegate,
-                                                           uvpp::loop& loop,
                                                            const std::string& url)
-    : Transport(delegate), 
-      mTcp(loop),
+    : Transport(delegate),
+      mLoop(),
+      mTcp(mLoop),
       mRtpInterleavedChannel(0),
       mRtcpInterleavedChannel(1),
       mConnectionHandler([&](const uvpp::error& error) { connectionHandler(error); }),
-      mReadHandler([&](const char* buf, ssize_t len) { readHandler(buf, len); })
+      mReadHandler([&](const char* buf, ssize_t len) { readHandler(buf, len); }),
+      mStopHandler([&]() { shutdown(); }),
+      mStop(mLoop, mStopHandler)
 {
     Url uri(url, 554);
     mHost = uri.getHost();
@@ -86,15 +88,22 @@ Overflow::InterleavedTcpTransport::shutdown()
 {
     mTcp.read_stop();
     mTcp.shutdown([&](uvpp::error) {
-            onStateChange(DISCONNECTED);
+            mLoop.stop();
         });
 }
 
-bool
-Overflow::InterleavedTcpTransport::connect()
+void
+Overflow::InterleavedTcpTransport::stop()
+{
+    mStop.send();
+}
+
+void
+Overflow::InterleavedTcpTransport::start()
 {
     onStateChange(CONNECTING);
-    return mTcp.connect(mHost, mPort, mConnectionHandler);
+    mTcp.connect(mHost, mPort, mConnectionHandler);
+    mLoop.run();
 }
 
 void

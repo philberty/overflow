@@ -32,9 +32,11 @@
 #include <uvpp/loop.hpp>
 #include <uvpp/timer.hpp>
 #include <uvpp/async.hpp>
+#include <uvpp/work.hpp>
 
 #include <string>
 #include <thread>
+#include <mutex>
 
 
 namespace Overflow
@@ -70,6 +72,12 @@ namespace Overflow
         void onTransportError(TransportErrorReason reason) override;
 
     private:
+        void stopTransport();
+
+        void startTransport();
+
+        void startReconnectTimer();
+        
         void eventLoopMain();
         
         void stopEventLoop();
@@ -125,7 +133,9 @@ namespace Overflow
         uvpp::loop mLoop;
         uvpp::Timer mKeepAliveTimer;
         uvpp::Timer mRtspRequestTimeoutTimer;
-        InterleavedTcpTransport mTcpTransport;
+        uvpp::Timer mReconnectTimer;
+        uvpp::Work mWorkers;
+        InterleavedTcpTransport* mTcpTransport;
         Transport* mTransport;
         std::thread* mEventLoop;
         RtspClientState mState;
@@ -137,7 +147,14 @@ namespace Overflow
         std::vector<unsigned char> mCurrentFrame;
 
         std::function<void ()> mStopEventLoopHandler;
+        std::function<void ()> mReconnectHandler;
+        std::function<void ()> mStopTransportHandler;
         uvpp::Async mStopEventLoop;
+        uvpp::Async mReconnect;
+        uvpp::Async mStopTransport;
+
+        bool mIsReconnecting;
+        std::mutex mMutex;
     };
     
 };

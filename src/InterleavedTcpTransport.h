@@ -29,6 +29,7 @@
 
 #include <uvpp/loop.hpp>
 #include <uvpp/tcp.hpp>
+#include <uvpp/async.hpp>
 
 
 namespace Overflow
@@ -37,7 +38,6 @@ namespace Overflow
     {
     public:
         InterleavedTcpTransport(ITransportDelegate * const delegate,
-                                uvpp::loop& loop,
                                 const std::string& url);
 
         virtual ~InterleavedTcpTransport() { }
@@ -50,17 +50,20 @@ namespace Overflow
 
         std::string getTransportHeaderString() const override;
 
-        bool connect() override;
+        void start() override;
 
-        void shutdown() override;
+        void stop() override;
 
     private:
+        void shutdown();
+        
         void connectionHandler(const uvpp::error& error);
 
         void readHandler(const char* buf, ssize_t len);
         
         size_t readResponse(const unsigned char* buffer, size_t length);
 
+        uvpp::loop mLoop;
         uvpp::Tcp mTcp;
         std::string mHost;
         int mPort;
@@ -70,6 +73,9 @@ namespace Overflow
 
         std::function<void (const uvpp::error&)> mConnectionHandler;
         std::function<void (const char* buf, ssize_t len)> mReadHandler;
+
+        std::function<void ()> mStopHandler;
+        uvpp::Async mStop;
     };
 };
 
