@@ -62,7 +62,10 @@ namespace Overflow
         virtual void onRtspClientStateChange(RtspClientState oldState,
                                              RtspClientState newState) = 0;
 
-        // Payload
+        virtual void onRtpPacketExtension(int id,
+                                          const unsigned char * buffer,
+                                          const size_t length) = 0;
+        
         virtual void onPayload(const unsigned char * buffer,
                                const size_t length) = 0;
 

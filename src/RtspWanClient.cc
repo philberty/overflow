@@ -164,6 +164,11 @@ Overflow::RtspWanClient::onRtpPacket(const RtpPacket* packet)
     }
     mLastSeqNum = seq_num;
 
+    if (packet->hasExtension ())
+    {
+        notifyDelegateOfExtension (packet);
+    }
+
     switch (mPalette.getType())
     {
     case H264:
@@ -257,6 +262,16 @@ Overflow::RtspWanClient::notifyDelegateOfPayload()
     if (mDelegate != nullptr)
         mDelegate->onPayload(getCurrentFrame(),
                              getCurrentFrameSize());
+}
+
+void
+Overflow::RtspWanClient::notifyDelegateOfExtension(const RtpPacket* packet)
+{
+    if (mDelegate != nullptr)
+        mDelegate->onRtpPacketExtension(
+            packet->getExtensionID (),
+            packet->getExtensionData (),
+            packet->getExtensionLength ());
 }
 
 void
@@ -394,12 +409,13 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
               << stateToString(newState);
 
     if (newState == CONNECTING)
-        onStateChange(CLIENT_CONNECTING);
-    else if (newState == CONNECTED)
-        onStateChange(CLIENT_CONNECTED);
-
-    if (newState == CONNECTED)
     {
+        onStateChange(CLIENT_CONNECTING);
+    }
+    else if (newState == CONNECTED)
+    {
+        onStateChange(CLIENT_CONNECTED);
+        
         mIsReconnecting = false;
         mReconnectTimer.stop();
         
@@ -408,6 +424,8 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
     }
     else if (newState == DISCONNECTED)
     {
+        onStateChange(CLIENT_DISCONNECTED);
+        
         mSession.clear ();
         resetCurrentPayload ();
         mLastSeqNum = -1;

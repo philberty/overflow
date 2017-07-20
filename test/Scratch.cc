@@ -43,6 +43,13 @@ class Delegate: public Overflow::IRtspDelegate
                   << " -> "
                   << stateToString(newState);
     }
+
+    void onRtpPacketExtension(int id,
+                              const unsigned char * buffer,
+                              const size_t length) override
+    {
+        LOG(INFO) << "onRtpPacketExtension: " << id;
+    }
     
     void onPayload(const unsigned char * buffer, const size_t length) override
     {
@@ -56,7 +63,8 @@ TEST(DEV, SCRATCH)
     OverflowTest::Helpers::setupTestLogger ();
     
     Delegate delegate;
-    Overflow::RtspWanClient client (&delegate, "rtsp://127.0.0.1:8554/test.264");
+    Overflow::RtspWanClient client (&delegate,
+                                    "rtsp://127.0.0.1:8554/test.264");
     
     client.start ();
     OverflowTest::Helpers::sleep (20);

@@ -27,9 +27,10 @@
 #include <cstdlib>
 
 
-namespace Overflow {
-
-    class RtpPacket {
+namespace Overflow
+{
+    class RtpPacket
+    {
     public:        
         RtpPacket(const unsigned char *buffer, uint16_t length);
 

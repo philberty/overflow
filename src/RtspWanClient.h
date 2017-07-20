@@ -63,7 +63,7 @@ namespace Overflow
     protected:
         void onRtpPacket(const RtpPacket* packet) override;
 
-        // void onRtcpPacket(const RtcpPackate* packet) = 0;
+        // void onRtcpPacket(const RtcpPackat* packet) = 0;
 
         void onRtspResponse(const Response* response) override;
 
@@ -87,6 +87,8 @@ namespace Overflow
         void onStateChange(RtspClientState state);
 
         void notifyDelegateOfPayload();
+
+        void notifyDelegateOfExtension(const RtpPacket* packet);
 
         void notifyDelegateOfPaletteType();
 
