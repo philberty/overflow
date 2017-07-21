@@ -63,8 +63,11 @@ TEST(DEV, SCRATCH)
     OverflowTest::Helpers::setupTestLogger ();
     
     Delegate delegate;
-    Overflow::RtspWanClient client (&delegate,
-                                    "rtsp://127.0.0.1:8554/test.264");
+
+    std::string ffmpegUrl = "rtsp://127.0.0.1:8554/test.264";
+    std::string gstreamerUrl = "rtsp://127.0.0.1:8555/test";
+    
+    Overflow::RtspWanClient client (&delegate, gstreamerUrl);
     
     client.start ();
     OverflowTest::Helpers::sleep (20);

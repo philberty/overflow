@@ -25,12 +25,12 @@ import java.nio.ByteBuffer;
 
 public interface RtspClientDelegate
 {
-    void onPaletteType(RtspSessionType type);
+    void onPaletteType(RtspClient.SessionType type);
         
-    void onRtspClientStateChange(RtspClientState oldState,
-                                 RtspClientState newState);
+    void onRtspClientStateChange(RtspClient.State oldState,
+                                 RtspClient.State newState);
 
-    void onRtpPacketExtension(int id, ByteBuffer buffer);
+    void onRtpPacketExtension(ByteBuffer buffer);
         
     void onPayload(ByteBuffer buffer);    
 }

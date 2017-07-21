@@ -32,18 +32,18 @@ extern "C" {
 #endif
 /*
  * Class:     com_github_redbrain_overflow_RtspClient
- * Method:    Start
+ * Method:    start
  * Signature: ()V
  */
-JNIEXPORT jint JNICALL Java_com_github_redbrain_overflow_RtspClient__1Start
+JNIEXPORT void JNICALL Java_com_github_redbrain_overflow_RtspClient_start
         (JNIEnv *, jobject);
 
 /*
  * Class:     com_github_redbrain_overflow_RtspClient
- * Method:    Stop
+ * Method:    stop
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_github_redbrain_overflow_RtspClient_Stop
+JNIEXPORT void JNICALL Java_com_github_redbrain_overflow_RtspClient_stop
   (JNIEnv *, jobject);
 
 /*
@@ -56,10 +56,10 @@ JNIEXPORT jlong JNICALL Java_com_github_redbrain_overflow_RtspClient__1new_1clie
 
 /*
  * Class:     com_github_redbrain_overflow_RtspClient
- * Method:    Close
+ * Method:    close
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_github_redbrain_overflow_RtspClient_Close
+JNIEXPORT void JNICALL Java_com_github_redbrain_overflow_RtspClient_close
         (JNIEnv *, jobject);
 
 #ifdef __cplusplus

@@ -27,7 +27,7 @@ public class RtspPlayerActivity extends AppCompatActivity implements TextureView
         player_texture_view = (TextureView) findViewById(R.id.player_texture_view);
         player_texture_view.setSurfaceTextureListener(this);
 
-        rtsp_client = new RtspClient(this, "rtsp://192.168.1.108:8554/test.264");
+        rtsp_client = new RtspClient(this, "rtsp://192.168.1.108:8555/test");
 
     }
 
@@ -35,10 +35,9 @@ public class RtspPlayerActivity extends AppCompatActivity implements TextureView
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
 
         try {
-
             decoder.Start(new Surface(surface), width, height);
 
-            boolean ok = rtsp_client.Start();
+            rtsp_client.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,12 +61,26 @@ public class RtspPlayerActivity extends AppCompatActivity implements TextureView
     }
 
     @Override
-    public void timeout() {
+    public void onPaletteType(RtspClient.SessionType type)
+    {
 
     }
 
     @Override
-    public void payload(ByteBuffer buffer) {
+    public void onRtspClientStateChange(RtspClient.State oldState,
+                                        RtspClient.State newState)
+    {
+
+    }
+
+    @Override
+    public void onRtpPacketExtension(ByteBuffer buffer)
+    {
+
+    }
+
+    @Override
+    public void onPayload(ByteBuffer buffer) {
         decoder.decode_payload(buffer);
     }
 }

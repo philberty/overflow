@@ -23,6 +23,7 @@
 #ifndef __RTSP_DELEGATE_WRAPPER_JNI__
 #define __RTSP_DELEGATE_WRAPPER_JNI__
 
+#include "../SessionDescription.h"
 #include "../IRtspDelegate.h"
 
 #include <glog/logging.h>
@@ -40,22 +41,34 @@ namespace OverflowJni
 
             delegate = env->NewGlobalRef(jdelegate);
             jclass c = env->GetObjectClass(delegate);
-            payload_method_id = env->GetMethodID(c, "payload", "(Ljava/nio/ByteBuffer;)V");
+            
+            payload_method_id = env->GetMethodID(c, "onPayload",
+                                                 "(Ljava/nio/ByteBuffer;)V");
+            extension_method_id = env->GetMethodID(c, "onRtpPacketExtension",
+                                                   "(Ljava/nio/ByteBuffer;)V");
+            
         }
 
-        // Invalid Response
-        void Invalid() override {
-
+        void onPaletteType(Overflow::RtspSessionType type) override
+        {
+            
+        }
+        
+        void onRtspClientStateChange(Overflow::RtspClientState oldState,
+                                     Overflow::RtspClientState newState)
+            override
+        {
+            
         }
 
-        // Timeout
-        void Timeout() override {
-
-            // TODO
+        void onRtpPacketExtension(int id,
+                                  const unsigned char * buffer,
+                                  const size_t length) override
+        {
+            
         }
 
-        // Payload
-        void Payload(const unsigned char * buf, const size_t length) override
+        void onPayload(const unsigned char * buf, const size_t length) override
         {
             JNIEnv *env;
             
@@ -87,20 +100,11 @@ namespace OverflowJni
             jvm->DetachCurrentThread();
         }
 
-        // REDIRECT
-        void ServerRedirect() override {
-
-        }
-
-        // ANNOUNCE
-        void ServerAnnounce() override {
-
-        }
-
     private:
         JavaVM *jvm;
         jobject delegate;
         jmethodID payload_method_id;
+        jmethodID extension_method_id;
     };
 
 };
