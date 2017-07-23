@@ -32,6 +32,7 @@ Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * 
     : Transport(delegate),
       mLoop(),
       mTcp(mLoop),
+      mConnectionTimer(mLoop),
       mRtpInterleavedChannel(0),
       mRtcpInterleavedChannel(1),
       mConnectionHandler([&](const uvpp::error& error) { connectionHandler(error); }),
@@ -93,6 +94,21 @@ Overflow::InterleavedTcpTransport::shutdown()
 }
 
 void
+Overflow::InterleavedTcpTransport::startConnectionTimer()
+{
+    // trim a few seconds to ensure keep-alive is sent in time
+    uint64_t timeout = 3 * 10;
+    
+    mConnectionTimer.start([&]() {
+            LOG(INFO) << "connection-timeout exceeded";
+            
+            uvpp::error e(1);
+            connectionHandler(e);
+        },
+        std::chrono::duration<uint64_t, std::milli>(timeout));
+}
+
+void
 Overflow::InterleavedTcpTransport::stop()
 {
     mStop.send();
@@ -102,13 +118,17 @@ void
 Overflow::InterleavedTcpTransport::start()
 {
     onStateChange(CONNECTING);
+    
+    startConnectionTimer();
     mTcp.connect(mHost, mPort, mConnectionHandler);
+    
     mLoop.run();
 }
 
 void
 Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
 {
+    mConnectionTimer.stop();
     if (error)
     {
         LOG(INFO) << "failed to connect: tcp://" << mHost << ":" << mPort;

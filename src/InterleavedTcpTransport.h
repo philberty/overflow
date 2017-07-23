@@ -30,6 +30,7 @@
 #include <uvpp/loop.hpp>
 #include <uvpp/tcp.hpp>
 #include <uvpp/async.hpp>
+#include <uvpp/timer.hpp>
 
 
 namespace Overflow
@@ -56,6 +57,8 @@ namespace Overflow
 
     private:
         void shutdown();
+
+        void startConnectionTimer();
         
         void connectionHandler(const uvpp::error& error);
 
@@ -65,6 +68,7 @@ namespace Overflow
 
         uvpp::loop mLoop;
         uvpp::Tcp mTcp;
+        uvpp::Timer mConnectionTimer;
         std::string mHost;
         int mPort;
         int mRtpInterleavedChannel;
