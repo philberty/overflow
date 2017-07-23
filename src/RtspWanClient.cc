@@ -28,7 +28,6 @@
 #include "MJPEGDepacketizer.h"
 
 #include <chrono>
-#include <glog/logging.h>
 
 
 Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,

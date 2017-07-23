@@ -49,6 +49,8 @@ endif()
 set(OVERFLOW_HEADERS
   ByteBuffer.h
   InterleavedTcpTransport.h
+  RtspController.h
+  TransportController.h
   Options.h
   SessionDescriptionFactory.h
   Teardown.h
@@ -78,6 +80,8 @@ set(OVERFLOW_HEADERS
 
 add_library(overflow 
   RtspWanClient.cc
+  RtspController.cc
+  TransportController.cc
   InterleavedTcpTransport.cc
   Response.cc
   RtspResponse.cc
@@ -97,10 +101,7 @@ add_library(overflow
 
   ${OVERFLOW_HEADERS}
   ${JNI_SOURCES}
-
-  # $<TARGET_OBJECTS:uv_obj>
-  # $<TARGET_OBJECTS:glog_obj>
-  )
+)
 
 add_dependencies(overflow uv glog)
 
