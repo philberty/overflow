@@ -54,6 +54,8 @@ namespace Overflow
 
         void join();
 
+        void standby();
+
         bool isRunning() const;
 
         void sendPlayRequest();
@@ -72,6 +74,8 @@ namespace Overflow
         void onTransportError(TransportErrorReason reason) override;
 
     private:
+        void resetClientState();
+        
         void stopTransport();
 
         void startTransport();

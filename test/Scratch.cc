@@ -70,7 +70,15 @@ TEST(DEV, SCRATCH)
     Overflow::RtspWanClient client (&delegate, gstreamerUrl);
     
     client.start ();
-    OverflowTest::Helpers::sleep (20);
+    OverflowTest::Helpers::sleep (10);
+
+    LOG(INFO) << "standyby";
+    client.standby ();
+    OverflowTest::Helpers::sleep (10);
+
+    client.start ();
+    OverflowTest::Helpers::sleep (10);
+    
     client.stop ();
     client.join ();
 }

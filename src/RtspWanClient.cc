@@ -65,6 +65,8 @@ Overflow::RtspWanClient::~RtspWanClient()
 void
 Overflow::RtspWanClient::start()
 {
+    startTransport ();
+    
     if (not isRunning())
         mEventLoop = new std::thread([&]() { eventLoopMain(); });
 }
@@ -76,7 +78,6 @@ Overflow::RtspWanClient::eventLoopMain()
     {
         auto mEventThreadId = std::this_thread::get_id();
         LOG(INFO) << "event-loop started on:  " << mEventThreadId;
-        startTransport ();
         mLoop.run ();
     }
     catch (std::exception& e)
@@ -91,6 +92,13 @@ Overflow::RtspWanClient::stop()
 {
     if (isRunning())
         mStopEventLoop.send();
+}
+
+void
+Overflow::RtspWanClient::standby()
+{
+    stopTransport ();
+    resetClientState ();
 }
 
 void
@@ -137,6 +145,7 @@ Overflow::RtspWanClient::stopTransport()
     if (mTransport == nullptr)
         return;
 
+    sendTeardownRequest ();
     mTransport->stop ();
 }
 
@@ -425,16 +434,21 @@ Overflow::RtspWanClient::onStateChange(TransportState oldState,
     {
         onStateChange(CLIENT_DISCONNECTED);
         
-        mSession.clear ();
-        resetCurrentPayload ();
-        mLastSeqNum = -1;
-        mIsFirstPayload = true;
-
-        // reconnect
-        mStopTransport.send();
+        resetClientState();
+        stopTransport();
+        
         if (not mIsReconnecting)
             mReconnect.send();
     }
+}
+
+void
+Overflow::RtspWanClient::resetClientState()
+{
+    mSession.clear ();
+    resetCurrentPayload ();
+    mLastSeqNum = -1;
+    mIsFirstPayload = true;
 }
 
 void
