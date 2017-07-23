@@ -25,9 +25,10 @@
 #include "RtspResponse.h"
 
 
-namespace Overflow {
-    
-    class SetupResponse: public RtspResponse {
+namespace Overflow
+{    
+    class SetupResponse: public RtspResponse
+    {
     public:
         SetupResponse(const Response *resp);
         
@@ -41,13 +42,13 @@ namespace Overflow {
         
         bool isInterleaved() const { return mIsInterleaved; }
         
-    private:       
+    private:
+        
         bool mIsInterleaved;
         int mRtpInterleavedChannel;
         int mRtcpInterleavedChannel;
         std::string mSession;
         int mTimeout;
     };
-
 };
 #endif //__SETUP_RESPONSE_H__
