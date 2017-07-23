@@ -134,7 +134,6 @@ namespace Overflow
         RtspFactory mFactory;
         uvpp::loop mLoop;
         uvpp::Timer mKeepAliveTimer;
-        uvpp::Timer mRtspRequestTimeoutTimer;
         uvpp::Timer mReconnectTimer;
         uvpp::Work mWorkers;
         InterleavedTcpTransport* mTcpTransport;

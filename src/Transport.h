@@ -44,9 +44,11 @@ namespace Overflow
 
         TransportState getState() const { return mState; }
 
-        bool isRunning() const { return getState() == CONNECTED; }
+        bool isRunning() const { return getState() != DISCONNECTED; }
 
-        virtual void write(const unsigned char *buffer, const size_t length) = 0;
+        virtual void writeRtsp(const unsigned char *buffer,
+                               const size_t length,
+                               int seconds) = 0;
 
         virtual std::string getTransportHeaderString() const = 0;
 

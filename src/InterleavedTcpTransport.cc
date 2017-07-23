@@ -33,6 +33,7 @@ Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * 
       mLoop(),
       mTcp(mLoop),
       mConnectionTimer(mLoop),
+      mRequestTimer(mLoop),
       mRtpInterleavedChannel(0),
       mRtcpInterleavedChannel(1),
       mConnectionHandler([&](const uvpp::error& error) { connectionHandler(error); }),
@@ -74,19 +75,26 @@ Overflow::InterleavedTcpTransport::setRtcpInterleavedChannel(int channel)
 }
 
 void
-Overflow::InterleavedTcpTransport::write(const unsigned char *buffer,
-                                         const size_t length)
-{    
+Overflow::InterleavedTcpTransport::writeRtsp(const unsigned char *buffer,
+                                             const size_t length,
+                                             int timeout)
+{
+    
+    bool shouldTimeout = timeout > 0;
+    if (shouldTimeout)
+        startRequestTimer (timeout);
+    
     mTcp.write((const char *)buffer, (int)length,
                [&](uvpp::error e) {
                    if (e)
                        onError(UNKNOWN);
                });
 }
- 
+
 void
 Overflow::InterleavedTcpTransport::shutdown()
 {
+    mRequestTimer.stop();
     mTcp.read_stop();
     mTcp.shutdown([&](uvpp::error) {
             mLoop.stop();
@@ -97,13 +105,24 @@ void
 Overflow::InterleavedTcpTransport::startConnectionTimer()
 {
     // trim a few seconds to ensure keep-alive is sent in time
-    uint64_t timeout = 3 * 10;
+    uint64_t timeout = 3 * 1000;
     
     mConnectionTimer.start([&]() {
             LOG(INFO) << "connection-timeout exceeded";
-            
-            uvpp::error e(1);
-            connectionHandler(e);
+            onStateChange(DISCONNECTED);
+        },
+        std::chrono::duration<uint64_t, std::milli>(timeout));
+}
+
+void
+Overflow::InterleavedTcpTransport::startRequestTimer(int seconds)
+{
+       // trim a few seconds to ensure keep-alive is sent in time
+    uint64_t timeout = seconds * 1000;
+    
+    mRequestTimer.start([&]() {
+            LOG(INFO) << "request-timeout exceeded";
+            onStateChange(DISCONNECTED);
         },
         std::chrono::duration<uint64_t, std::milli>(timeout));
 }
@@ -132,6 +151,7 @@ Overflow::InterleavedTcpTransport::connectionHandler(const uvpp::error& error)
     if (error)
     {
         LOG(INFO) << "failed to connect: tcp://" << mHost << ":" << mPort;
+        LOG(INFO) << error.str ();
         onError(UNKNOWN); // TODO error types
         onStateChange(DISCONNECTED);
         return;
@@ -230,6 +250,8 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
         }
         else if (is_rtsp)
         {
+            mRequestTimer.stop();
+            
             std::string string_response;
             string_response.resize(length - offset);
             std::copy(buffer + offset, buffer + length, string_response.begin());

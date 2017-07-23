@@ -47,7 +47,9 @@ namespace Overflow
 
         void setRtcpInterleavedChannel(int channel);
 
-        void write(const unsigned char *buffer, const size_t length) override;
+        void writeRtsp(const unsigned char *buffer,
+                       const size_t length,
+                       int timeout) override;
 
         std::string getTransportHeaderString() const override;
 
@@ -59,6 +61,8 @@ namespace Overflow
         void shutdown();
 
         void startConnectionTimer();
+
+        void startRequestTimer(int seconds);
         
         void connectionHandler(const uvpp::error& error);
 
@@ -69,6 +73,8 @@ namespace Overflow
         uvpp::loop mLoop;
         uvpp::Tcp mTcp;
         uvpp::Timer mConnectionTimer;
+        uvpp::Timer mRequestTimer;
+        
         std::string mHost;
         int mPort;
         int mRtpInterleavedChannel;

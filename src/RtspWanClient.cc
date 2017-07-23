@@ -38,7 +38,6 @@ Overflow::RtspWanClient::RtspWanClient(IRtspDelegate * const delegate,
       mFactory(url),
       mLoop(),
       mKeepAliveTimer(mLoop),
-      mRtspRequestTimeoutTimer(mLoop),
       mReconnectTimer(mLoop),
       mWorkers(mLoop),
       mTcpTransport(nullptr),
@@ -565,8 +564,9 @@ Overflow::RtspWanClient::sendRtsp(Rtsp* request)
 {
     const ByteBuffer& buf = request->getBuffer();
 
-    mTransport->write(buf.bytesPointer(),
-                      buf.length());
+    mTransport->writeRtsp(buf.bytesPointer(),
+                          buf.length(),
+                          3);
 }
 
 void
