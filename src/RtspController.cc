@@ -39,7 +39,7 @@ Overflow::RtspController::RtspController (IRtspDelegate* delegate,
       mLastSeqNum (-1),
       mIsFirstPayload (true)
 {
-    onStateChange (CLIENT_INITILIZED);
+    
 }
 
 Overflow::RtspController::~RtspController ()
@@ -48,29 +48,37 @@ Overflow::RtspController::~RtspController ()
 }
 
 void
+Overflow::RtspController::standby ()
+{
+    sendTeardownRequest ();
+    stopTransportAsync ();
+    resetClientState ();
+}
+
+void
 Overflow::RtspController::sendPlayRequest ()
 {
-    onStateChange(CLIENT_SENDING_PLAY);
+    onStateChange (CLIENT_SENDING_PLAY);
 
-    Play* play = mFactory.playRequest(mSession);
-    sendRtsp(play);
+    Play* play = mFactory.playRequest (mSession);
+    sendRtsp (play);
     delete play;
 }
 
 void
 Overflow::RtspController::sendPauseRequest ()
 {
-    onStateChange(CLIENT_SENDING_PAUSE);
+    onStateChange (CLIENT_SENDING_PAUSE);
 
     Pause* pause = mFactory.pauseRequest(mSession);
-    sendRtsp(pause);
+    sendRtsp (pause);
     delete pause;
 }
 
 void
 Overflow::RtspController::onKeepAlive ()
 {
-    sendOptionsRequest ();
+    sendKeepAlive ();
 }
 
 void
@@ -80,7 +88,7 @@ Overflow::RtspController::onRtpPacket (const RtpPacket* packet)
     bool initialized_last_seq_num = mLastSeqNum != -1;    
     if (initialized_last_seq_num)
     {
-        bool out_of_sequence = (mLastSeqNum + 1) != seq_num;
+        bool out_of_sequence = (mLastSeqNum + 1) != seqNum;
         if (out_of_sequence)
         {
             LOG(ERROR) << "out of sequence rtp-packets: "
@@ -167,7 +175,7 @@ void
 Overflow::RtspController::onStateChange(TransportState oldState,
                                         TransportState newState)
 {
-    else if (newState == CONNECTING)
+    if (newState == CONNECTING)
     {
         onStateChange (CLIENT_CONNECTING);
     }
@@ -183,10 +191,10 @@ Overflow::RtspController::onStateChange(TransportState oldState,
     {
         onStateChange (CLIENT_DISCONNECTED);
         
-        stopTransport ();
+        stopTransportAsync ();
         resetClientState ();
         
-        if (not isReconnecting)
+        if (not isReconnecting())
             reconnect ();
     }
     else
@@ -276,6 +284,15 @@ Overflow::RtspController::resetCurrentPayload()
     mCurrentFrame.resize (0);
 }
 
+void
+Overflow::RtspController::resetClientState()
+{
+    mSession.clear();
+    mLastSeqNum = -1;
+    mIsFirstPayload = true;
+    resetCurrentPayload ();
+}
+
 size_t
 Overflow::RtspController::getCurrentFrameSize() const
 {
@@ -320,7 +337,20 @@ Overflow::RtspController::sendOptionsRequest()
 void
 Overflow::RtspController::onOptionsResponse(const Response* response)
 {
+    LOG(INFO) << "Received: "
+              << response->getStringBuffer();
+    RtspResponse resp(response);
     
+    if (not resp.ok())
+        onStateChange(CLIENT_ERROR);
+    else
+    {
+        onStateChange (CLIENT_OPTIONS_OK);
+
+        bool haveSession = not mSession.empty();
+        if (not haveSession)
+            sendDescribeRequest();
+    }
 }
 
 void
@@ -328,8 +358,8 @@ Overflow::RtspController::sendDescribeRequest()
 {
     onStateChange(CLIENT_SENDING_DESCRIBE);
     
-    Describe* describe = mFactory.describeRequest(true);
-    sendRtsp(describe);
+    Describe* describe = mFactory.describeRequest (true);
+    sendRtsp (describe);
     delete describe;
 }
 
@@ -379,9 +409,7 @@ Overflow::RtspController::sendSetupRequest()
         mFactory.setPath (setup_url);
     }
 
-    Setup* setup = mFactory.setupRequest (
-        mTransport->getTransportHeaderString());
-    
+    Setup* setup = mFactory.setupRequest (getTransportHeaderString ());
     sendRtsp (setup);
     delete setup;
 }
@@ -432,7 +460,7 @@ Overflow::RtspController::onPauseResponse(const Response* response)
 }
 
 void
-Overflow::RtspController::sendTeardownRequest()
+Overflow::RtspController::sendTeardownRequest ()
 {
     Teardown* teardown = mFactory.teardownRequest(mSession);
     sendRtsp (teardown);
@@ -440,8 +468,19 @@ Overflow::RtspController::sendTeardownRequest()
 }
 
 void
-Overflow::RtspController::sentRtsp (const Rtsp* request)
+Overflow::RtspController::sendKeepAlive ()
 {
+    onStateChange(CLIENT_SENDING_KEEP_ALIVE);
+    
+    Options* options = mFactory.optionsRequest ();
+    sendRtsp (options, false);
+    delete options;
+}
+
+void
+Overflow::RtspController::sendRtsp (Rtsp* request, bool responseTimeout)
+{
+    int timeout = (responseTimeout) ? 3 : -1;
     const ByteBuffer& buf = request->getBuffer();
-    send(buf.bytesPointer(), buf.length(), 3);
+    sendRtspBytes (buf.bytesPointer (), buf.length (), timeout);
 }

@@ -22,6 +22,7 @@
 #ifndef __RTSP_WAN_CLIENT_H__
 #define __RTSP_WAN_CLIENT_H__
 
+#include "RtspController.h"
 #include "InterleavedTcpTransport.h"
 #include "IRtspDelegate.h"
 #include "Transport.h"
@@ -31,7 +32,7 @@
 
 namespace Overflow
 {   
-    class RtspWanClient: public RtspController
+    class RtspWanClient : public RtspController
     {
     public:
         RtspWanClient(IRtspDelegate * const delegate, const std::string& url);
@@ -43,7 +44,6 @@ namespace Overflow
 
     private:
         std::string mUrl;
-        RtspFactory mFactory;
     };
     
 };

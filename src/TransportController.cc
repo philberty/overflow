@@ -34,6 +34,7 @@ Overflow::TransportController::TransportController ()
       mStopEventLoopHandler([&]() { stopEventLoop(); }),
       mReconnectHandler([&]() { startReconnectTimer(); }),
       mStopTransportHandler([&]() { stopTransport(); }),
+      mEventLoopHandler([&]() { eventLoopMain(); }),
       mStopEventLoop(mLoop, mStopEventLoopHandler),
       mReconnect(mLoop, mReconnectHandler),
       mStopTransport(mLoop, mStopTransportHandler),
@@ -53,7 +54,7 @@ Overflow::TransportController::start ()
     startTransport ();
     
     if (not isRunning())
-        mEventLoop = new std::thread([&]() { eventLoopMain(); });
+        mEventLoop = new std::thread (mEventLoopHandler);
 }
 
 void
@@ -83,12 +84,13 @@ Overflow::TransportController::isRunning () const
 void
 Overflow::TransportController::stopTransport ()
 {
-    std::lock_guard<std::mutex> guard(mMutex);
-    if (mTransport == nullptr)
-        return;
-
-    sendTeardownRequest ();
     mTransport->stop ();
+}
+
+void
+Overflow::TransportController::stopTransportAsync ()
+{
+    mStopTransport.send ();
 }
 
 void
@@ -99,8 +101,7 @@ Overflow::TransportController::startTransport ()
             mTransport->start ();
         },
         [&](uvpp::error) {
-            std::lock_guard<std::mutex> guard(mMutex);
-            delete mTcpTransport;
+            delete mTransport;
             mTransport = nullptr;
         });
 }
@@ -120,10 +121,16 @@ Overflow::TransportController::startReconnectTimer ()
         std::chrono::duration<uint64_t, std::milli>(timeout));
 }
 
-void
+bool
 Overflow::TransportController::isReconnecting () const
 {
     return mIsReconnecting;
+}
+
+std::string
+Overflow::TransportController::getTransportHeaderString () const
+{
+    return mTransport->getTransportHeaderString ();
 }
 
 void
@@ -162,13 +169,11 @@ Overflow::TransportController::stopEventLoop ()
 }
         
 void
-Overflow::TransportController::send (const unsigned char* buffer,
-                                     size_t length,
-                                     int timeout)
+Overflow::TransportController::sendRtspBytes (const unsigned char* buffer,
+                                              size_t length,
+                                              int timeout)
 {
-    mTransport->writeRtsp (buf.bytesPointer(),
-                           buf.length(),
-                           timeout);
+    mTransport->writeRtsp (buffer, length, timeout);
 }
 
 void

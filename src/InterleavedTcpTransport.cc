@@ -130,7 +130,7 @@ Overflow::InterleavedTcpTransport::startRequestTimer(int seconds)
 void
 Overflow::InterleavedTcpTransport::stop()
 {
-    mStop.send();
+    mStop.send ();
 }
 
 void

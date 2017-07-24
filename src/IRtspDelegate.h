@@ -46,6 +46,7 @@ namespace Overflow
         CLIENT_SENDING_PAUSE,
         CLIENT_PAUSE_OK,
         CLIENT_SENDING_TEARDOWN,
+        CLIENT_SENDING_KEEP_ALIVE,
         CLIENT_RECEIVED_RESPONSE,
         CLIENT_DISCONNECTED,
         CLIENT_TIMEOUT,
@@ -115,6 +116,9 @@ namespace Overflow
                 break;
             case CLIENT_SENDING_TEARDOWN:
                 state_string = "sending-teardown-request";
+                break;
+            case CLIENT_SENDING_KEEP_ALIVE:
+                state_string = "sending-keep-alive";
                 break;
             case CLIENT_RECEIVED_RESPONSE:
                 state_string = "received-response";

@@ -29,6 +29,10 @@
 #include "RtspFactory.h"
 #include "SessionDescription.h"
 
+#include <uvpp/loop.hpp>
+#include <uvpp/timer.hpp>
+#include <uvpp/work.hpp>
+#include <uvpp/async.hpp>
 
 #include <string>
 #include <thread>
@@ -50,14 +54,16 @@ namespace Overflow
 
         void join ();
 
-        void standby ();
-
         bool isRunning () const;
 
         bool isReconnecting () const;
         
     protected:
+        std::string getTransportHeaderString () const;
+        
         void stopTransport ();
+
+        void stopTransportAsync ();
 
         void startTransport ();
 
@@ -67,7 +73,9 @@ namespace Overflow
         
         void stopEventLoop ();
         
-        void sendRtsp (Rtsp* request);
+        void sendRtspBytes (const unsigned char* buffer,
+                            size_t length,
+                            int timeout);
         
         void startKeepAliveTimer (int seconds);
 
@@ -88,6 +96,7 @@ namespace Overflow
         std::function<void ()> mStopEventLoopHandler;
         std::function<void ()> mReconnectHandler;
         std::function<void ()> mStopTransportHandler;
+        std::function<void ()> mEventLoopHandler;
         
         uvpp::Async mStopEventLoop;
         uvpp::Async mReconnect;

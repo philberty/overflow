@@ -22,7 +22,6 @@
 #ifndef __RTSP_CONTROLLER_H__
 #define __RTSP_CONTROLLER_H__
 
-
 #include "TransportController.h"
 #include "ITransportDelegate.h"
 #include "Transport.h"
@@ -35,7 +34,7 @@
 
 namespace Overflow
 {
-    class RtspController: protected TransportController,
+    class RtspController: public TransportController,
                           protected ITransportDelegate
     {
     public:
@@ -46,6 +45,8 @@ namespace Overflow
         void sendPlayRequest ();
 
         void sendPauseRequest ();
+
+        void standby ();
 
     protected:
         void onKeepAlive () override;
@@ -79,7 +80,9 @@ namespace Overflow
 
         void processMJPEGPacket(const RtpPacket* packet);
 
-        void resetCurrentPayload();
+        void resetCurrentPayload ();
+
+        void resetClientState ();
 
         size_t getCurrentFrameSize() const;
 
@@ -87,28 +90,30 @@ namespace Overflow
 
         void appendPayloadToCurrentFrame(const unsigned char* buffer, size_t length);
 
-        void notifyDelegateOfStateChange(RtspClientState oldState,
-                                         RtspClientState newState);
+        void notifyDelegateOfStateChange (RtspClientState oldState,
+                                          RtspClientState newState);
 
-        void sendOptionsRequest();
+        void sendOptionsRequest ();
 
-        void onOptionsResponse(const Response* response);
+        void onOptionsResponse (const Response* response);
 
-        void sendDescribeRequest();
+        void sendDescribeRequest ();
 
-        void onDescribeResponse(const Response* response);
+        void onDescribeResponse (const Response* response);
 
-        void sendSetupRequest();
+        void sendSetupRequest ();
 
-        void onSetupResponse(const Response* response);
+        void onSetupResponse (const Response* response);
 
-        void onPlayResponse(const Response* response);
+        void onPlayResponse (const Response* response);
 
-        void onPauseResponse(const Response* response);
+        void onPauseResponse (const Response* response);
 
-        void sendTeardownRequest();
+        void sendTeardownRequest ();
 
-        void sentRtsp (const Rtsp* request);
+        void sendKeepAlive ();
+
+        void sendRtsp (Rtsp* request, bool timeout=true);
 
         // fields
         IRtspDelegate* mDelegate;
