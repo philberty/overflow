@@ -29,11 +29,11 @@ add_executable(testrunner
   )
 
 target_link_libraries(testrunner
+  ${CMAKE_DL_LIBS}
+  ${EXTRA_LINKS}
   overflow
   gtest
   gmock
-  ${CMAKE_DL_LIBS}
-  ${EXTRA_LINKS}
   )
 
 add_test(NAME testrunner
