@@ -107,6 +107,8 @@ add_dependencies(overflow uv glog)
 
 if(BUILD_JNI)
   target_link_libraries (overflow ${JNI_LIBS} uv glog)
+else()
+  target_link_libraries (overflow uv glog)
 endif()
 
 install(TARGETS overflow
