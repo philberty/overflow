@@ -50,7 +50,9 @@ Overflow::RtspController::~RtspController ()
 void
 Overflow::RtspController::standby ()
 {
-    sendTeardownRequest ();
+    if (isConnected ())
+        sendTeardownRequest ();
+    
     stopTransportAsync ();
     resetClientState ();
 }
