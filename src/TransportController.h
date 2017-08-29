@@ -56,6 +56,8 @@ namespace Overflow
 
         bool isRunning () const;
 
+        bool isConnected () const;
+
         bool isReconnecting () const;
         
     protected:

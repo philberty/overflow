@@ -81,10 +81,17 @@ Overflow::TransportController::isRunning () const
     return mEventLoop != nullptr and mEventLoop->joinable();
 }
 
+bool
+Overflow::TransportController::isConnected () const
+{
+    return mTransport != nullptr and mTransport->getState () == CONNECTED;
+}
+
 void
 Overflow::TransportController::stopTransport ()
 {
-    mTransport->stop ();
+    if (mTransport != nullptr)
+        mTransport->stop ();
 }
 
 void
