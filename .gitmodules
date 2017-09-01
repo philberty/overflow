@@ -4,9 +4,6 @@
 [submodule "ext/uvpp"]
 	path = ext/uvpp
 	url = https://github.com/redbrain/uvpp.git
-[submodule "ext/libuv-cmake"]
-	path = ext/libuv-cmake
-	url = https://github.com/redbrain/libuv-cmake.git
 [submodule "ext/cppcodec"]
 	path = ext/cppcodec
 	url = https://github.com/tplgy/cppcodec.git
@@ -16,3 +13,6 @@
 [submodule "ext/concurrentqueue"]
 	path = ext/concurrentqueue
 	url = https://github.com/redbrain/concurrentqueue
+[submodule "ext/libuv-cmake"]
+	path = ext/libuv-cmake
+	url = https://github.com/jen20/libuv-cmake
