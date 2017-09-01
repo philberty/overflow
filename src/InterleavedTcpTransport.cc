@@ -29,17 +29,17 @@
 
 Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * const delegate,
                                                            const std::string& url)
-    : Transport(delegate),
-      mLoop(),
-      mTcp(mLoop),
-      mConnectionTimer(mLoop),
-      mRequestTimer(mLoop),
-      mRtpInterleavedChannel(0),
-      mRtcpInterleavedChannel(1),
-      mConnectionHandler([&](const uvpp::error& error) { connectionHandler(error); }),
-      mReadHandler([&](const char* buf, ssize_t len) { readHandler(buf, len); }),
-      mStopHandler([&]() { shutdown(); }),
-      mStop(mLoop, mStopHandler)
+    : Transport (delegate),
+      mLoop (false),
+      mTcp (mLoop),
+      mConnectionTimer (mLoop),
+      mRequestTimer (mLoop),
+      mRtpInterleavedChannel (0),
+      mRtcpInterleavedChannel (1),
+      mConnectionHandler ([&](const uvpp::error& error) { connectionHandler(error); }),
+      mReadHandler ([&](const char* buf, ssize_t len) { readHandler(buf, len); }),
+      mStopHandler ([&]() { shutdown(); }),
+      mStop (mLoop, mStopHandler)
 {
     Url uri(url, 554);
     mHost = uri.getHost();
@@ -84,20 +84,20 @@ Overflow::InterleavedTcpTransport::writeRtsp(const unsigned char *buffer,
     if (shouldTimeout)
         startRequestTimer (timeout);
     
-    mTcp.write((const char *)buffer, (int)length,
-               [&](uvpp::error e) {
-                   if (e)
-                       onError(UNKNOWN);
-               });
+    mTcp.write ((const char *)buffer, (int)length,
+                [&](uvpp::error e) {
+                    if (e)
+                        onError(UNKNOWN);
+                });
 }
 
 void
 Overflow::InterleavedTcpTransport::shutdown()
 {
-    mRequestTimer.stop();
-    mTcp.read_stop();
-    mTcp.shutdown([&](uvpp::error) {
-            mLoop.stop();
+    mRequestTimer.stop ();
+    mTcp.read_stop ();
+    mTcp.shutdown ([&](uvpp::error) {
+            mLoop.stop ();
         });
 }
 

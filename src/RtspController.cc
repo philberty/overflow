@@ -32,9 +32,11 @@
 
 Overflow::RtspController::RtspController (IRtspDelegate* delegate,
                                           std::string url)
-    : mDelegate(delegate),
+    : TransportController (),
+      mDelegate (delegate),
       mUrl (url),
       mFactory (mUrl),
+      mState (CLIENT_INITILIZED),
       mServerAllowsAggregate (false),
       mLastSeqNum (-1),
       mIsFirstPayload (true)
@@ -47,13 +49,21 @@ Overflow::RtspController::~RtspController ()
     
 }
 
+bool
+Overflow::RtspController::haveSession () const
+{
+    return not mSession.empty();
+}
+
 void
 Overflow::RtspController::standby ()
 {
-    if (isConnected ())
+    if (isConnected () and haveSession ())
         sendTeardownRequest ();
     
-    stopTransportAsync ();
+    stopReconnectTimer ();
+    stopTransport ();
+    
     resetClientState ();
 }
 
@@ -349,8 +359,7 @@ Overflow::RtspController::onOptionsResponse(const Response* response)
     {
         onStateChange (CLIENT_OPTIONS_OK);
 
-        bool haveSession = not mSession.empty();
-        if (not haveSession)
+        if (not haveSession ())
             sendDescribeRequest();
     }
 }

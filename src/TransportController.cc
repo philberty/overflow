@@ -25,20 +25,24 @@
 
 
 Overflow::TransportController::TransportController ()
-    : mLoop(),
-      mKeepAliveTimer(mLoop),
-      mReconnectTimer(mLoop),
-      mWorkers(mLoop),
-      mTransport(nullptr),
-      mEventLoop(nullptr),
+    : mLoop (false),
+      mKeepAliveTimer (mLoop),
+      mReconnectTimer (mLoop),
+      
       mStopEventLoopHandler([&]() { stopEventLoop(); }),
       mReconnectHandler([&]() { startReconnectTimer(); }),
       mStopTransportHandler([&]() { stopTransport(); }),
       mEventLoopHandler([&]() { eventLoopMain(); }),
+      mTransportLoopHandler([&]() { transportLoopMain(); }),
+      
       mStopEventLoop(mLoop, mStopEventLoopHandler),
       mReconnect(mLoop, mReconnectHandler),
       mStopTransport(mLoop, mStopTransportHandler),
-      mIsReconnecting(false)
+      
+      mIsReconnecting(false),
+      mTransport(nullptr),
+      mEventLoop(nullptr),
+      mTransportLoop(nullptr)
 {
 }
 
@@ -60,17 +64,18 @@ Overflow::TransportController::start ()
 void
 Overflow::TransportController::stop ()
 {
-    if (isRunning())
+    if (isRunning ())
         mStopEventLoop.send();
 }
 
 void
 Overflow::TransportController::join ()
 {
-    if (not isRunning())
+    if (not isRunning ())
         return;
 
-    mEventLoop->join();
+    mEventLoop->join ();
+    
     delete mEventLoop;
     mEventLoop = nullptr;
 }
@@ -91,7 +96,16 @@ void
 Overflow::TransportController::stopTransport ()
 {
     if (mTransport != nullptr)
-        mTransport->stop ();
+    {
+        mTransport->stop ();        
+        mTransportLoop->join ();
+        
+        delete mTransportLoop;
+        delete mTransport;
+
+        mTransport = nullptr;
+        mTransportLoop = nullptr;
+    }
 }
 
 void
@@ -103,14 +117,18 @@ Overflow::TransportController::stopTransportAsync ()
 void
 Overflow::TransportController::startTransport ()
 {
-    mWorkers.execute([&]() {
-            mTransport = createTransport ();
-            mTransport->start ();
-        },
-        [&](uvpp::error) {
-            delete mTransport;
-            mTransport = nullptr;
-        });
+    if (mTransportLoop == nullptr)
+        mTransportLoop = new std::thread (mTransportLoopHandler);
+}
+
+void
+Overflow::TransportController::transportLoopMain ()
+{
+    auto transportThreadId = std::this_thread::get_id();
+    LOG(INFO) << "starting transport on: "<< transportThreadId;
+    
+    mTransport = createTransport ();
+    mTransport->start ();
 }
 
 void
@@ -143,6 +161,14 @@ Overflow::TransportController::getTransportHeaderString () const
 void
 Overflow::TransportController::onTransportConnected ()
 {
+    stopReconnectTimer ();
+}
+
+void
+Overflow::TransportController::stopReconnectTimer ()
+{
+    LOG(INFO) << "stopping reconnect timer";
+    
     mIsReconnecting = false;
     mReconnectTimer.stop ();
 }
@@ -156,8 +182,8 @@ Overflow::TransportController::reconnect ()
 void
 Overflow::TransportController::eventLoopMain ()
 {
-    auto mEventThreadId = std::this_thread::get_id();
-    LOG(INFO) << "event-loop started on:  " << mEventThreadId;
+    auto eventThreadId = std::this_thread::get_id();
+    LOG(INFO) << "starting event-loop on: " << eventThreadId;
     mLoop.run ();
 }
         
@@ -166,10 +192,9 @@ Overflow::TransportController::stopEventLoop ()
 {
     LOG(INFO) << "stopping event-loop";
     
+    stopTransport ();
     mReconnectTimer.stop ();
     mKeepAliveTimer.stop ();
-    stopTransport ();
-    
     mLoop.stop ();
     
     LOG(INFO) << "stopped event-loop core";   

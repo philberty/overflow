@@ -84,6 +84,8 @@ namespace Overflow
 
         void resetClientState ();
 
+        bool haveSession () const;
+
         size_t getCurrentFrameSize() const;
 
         const unsigned char* getCurrentFrame() const;

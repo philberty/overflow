@@ -72,8 +72,12 @@ namespace Overflow
         void startReconnectTimer ();
         
         void eventLoopMain ();
+
+        void transportLoopMain ();
         
         void stopEventLoop ();
+
+        void stopReconnectTimer ();
         
         void sendRtspBytes (const unsigned char* buffer,
                             size_t length,
@@ -93,12 +97,12 @@ namespace Overflow
         uvpp::loop mLoop;
         uvpp::Timer mKeepAliveTimer;
         uvpp::Timer mReconnectTimer;
-        uvpp::Work mWorkers;
 
         std::function<void ()> mStopEventLoopHandler;
         std::function<void ()> mReconnectHandler;
         std::function<void ()> mStopTransportHandler;
         std::function<void ()> mEventLoopHandler;
+        std::function<void ()> mTransportLoopHandler;
         
         uvpp::Async mStopEventLoop;
         uvpp::Async mReconnect;
@@ -106,8 +110,8 @@ namespace Overflow
 
         bool mIsReconnecting;
         Transport* mTransport;
-        std::mutex mMutex;
         std::thread* mEventLoop;
+        std::thread* mTransportLoop;
     };
 };
 

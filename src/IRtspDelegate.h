@@ -56,7 +56,7 @@ namespace Overflow
     class IRtspDelegate
     {
     public:
-        virtual ~IRtspDelegate() { };
+        virtual ~IRtspDelegate() { }
 
         virtual void onPaletteType(RtspSessionType type) = 0;
         
@@ -72,68 +72,49 @@ namespace Overflow
 
         static std::string stateToString(RtspClientState state)
         {
-            std::string state_string;
             switch (state)
             {
             case CLIENT_INITILIZED:
-                state_string = "initialized";
-                break;
+                return "initialized";
             case CLIENT_CONNECTING:
-                state_string = "connecting";
-                break;
+                return "connecting";
             case CLIENT_CONNECTED:
-                state_string = "connected";
-                break;
+                return "connected";
             case CLIENT_SENDING_OPTIONS:
-                state_string = "sending-options-request";
-                break;
+                return "sending-options-request";
             case CLIENT_OPTIONS_OK:
-                state_string = "options-ok";
-                break;
+                return "options-ok";
             case CLIENT_SENDING_DESCRIBE:
-                state_string = "sending-describe-request";
-                break;
+                return "sending-describe-request";
             case CLIENT_DESCRIBE_OK:
-                state_string = "describe-ok";
-                break;
+                return "describe-ok";
             case CLIENT_SENDING_SETUP:
-                state_string = "sending-setup-request";
-                break;
+                return "sending-setup-request";
             case CLIENT_SETUP_OK:
-                state_string = "setup-ok";
-                break;
+                return "setup-ok";
             case CLIENT_SENDING_PLAY:
-                state_string = "sending-play-request";
-                break;
+                return "sending-play-request";
             case CLIENT_PLAY_OK:
-                state_string = "play-ok";
-                break;
+                return "play-ok";
             case CLIENT_SENDING_PAUSE:
-                state_string = "sending-pause-request";
-                break;
+                return "sending-pause-request";
             case CLIENT_PAUSE_OK:
-                state_string = "pause-ok";
-                break;
+                return "pause-ok";
             case CLIENT_SENDING_TEARDOWN:
-                state_string = "sending-teardown-request";
-                break;
+                return "sending-teardown-request";
             case CLIENT_SENDING_KEEP_ALIVE:
-                state_string = "sending-keep-alive";
-                break;
+                return "sending-keep-alive";
             case CLIENT_RECEIVED_RESPONSE:
-                state_string = "received-response";
-                break;
+                return "received-response";
             case CLIENT_DISCONNECTED:
-                state_string = "disconnected";
-                break;
+                return "disconnected";
             case CLIENT_TIMEOUT:
-                state_string = "timeout";
-                break;
+                return "timeout";
             case CLIENT_ERROR:
-                state_string = "error";
-                break;
-            };            
-            return state_string;
+                return "error";
+            };
+            
+            return "unknown";
         }
     };    
 };
