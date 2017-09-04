@@ -27,21 +27,21 @@
 #include <uvpp/resolver.hpp>
 
 
-Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * const delegate,
+Overflow::InterleavedTcpTransport::InterleavedTcpTransport(uvpp::loop& loop,
+                                                           ITransportDelegate * const delegate,
                                                            const std::string& url)
-    : Transport (delegate),
-      mLoop (false),
-      mTcp (mLoop),
-      mConnectionTimer (mLoop),
-      mRequestTimer (mLoop),
+    : Transport (loop, delegate, url),
+      mTcp (loop),
+      mConnectionTimer (loop),
+      mRequestTimer (loop),
       mRtpInterleavedChannel (0),
       mRtcpInterleavedChannel (1),
-      mConnectionHandler ([&](const uvpp::error& error) { connectionHandler(error); }),
-      mReadHandler ([&](const char* buf, ssize_t len) { readHandler(buf, len); }),
+      mConnectionHandler ([&](const uvpp::error& error) { connectionHandler (error); }),
+      mReadHandler ([&](const char* buf, ssize_t len) { readHandler (buf, len); }),
       mStopHandler ([&]() { shutdown(); }),
-      mStop (mLoop, mStopHandler)
+      mStop (loop, mStopHandler)
 {
-    Url uri(url, 554);
+    Url uri (url, 554);
     mHost = uri.getHost();
     mPort = uri.getPort();
 }
@@ -51,10 +51,10 @@ Overflow::InterleavedTcpTransport::getTransportHeaderString() const
 {
     char rtp_channel[12];
     char rtcp_channel[12];
-    memset(rtp_channel, 0, sizeof(rtp_channel));
-    memset(rtcp_channel, 0, sizeof(rtcp_channel));
-    snprintf(rtp_channel, sizeof(rtp_channel), "%d", mRtpInterleavedChannel);
-    snprintf(rtcp_channel, sizeof(rtcp_channel), "%d", mRtcpInterleavedChannel);
+    memset (rtp_channel, 0, sizeof(rtp_channel));
+    memset (rtcp_channel, 0, sizeof(rtcp_channel));
+    snprintf (rtp_channel, sizeof(rtp_channel), "%d", mRtpInterleavedChannel);
+    snprintf (rtcp_channel, sizeof(rtcp_channel), "%d", mRtcpInterleavedChannel);
     
     return "RTP/AVP/TCP;unicast;interleaved="
         + std::string(rtp_channel)
@@ -96,9 +96,7 @@ Overflow::InterleavedTcpTransport::shutdown()
 {
     mRequestTimer.stop ();
     mTcp.read_stop ();
-    mTcp.shutdown ([&](uvpp::error) {
-            mLoop.stop ();
-        });
+    mTcp.shutdown ([&](uvpp::error) { });
 }
 
 void
@@ -130,7 +128,8 @@ Overflow::InterleavedTcpTransport::startRequestTimer(int seconds)
 void
 Overflow::InterleavedTcpTransport::stop()
 {
-    mStop.send ();
+    // mStop.send ();
+    shutdown ();
 }
 
 void
@@ -138,10 +137,10 @@ Overflow::InterleavedTcpTransport::start()
 {
     onStateChange(CONNECTING);
     
-    startConnectionTimer();
-    mTcp.connect(mHost, mPort, mConnectionHandler);
-    
-    mLoop.run();
+    startConnectionTimer ();
+    mTcp.connect (mHost, mPort, [&](const uvpp::error& error) {
+        connectionHandler (error);
+    });
 }
 
 void

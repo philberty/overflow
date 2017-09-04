@@ -31,22 +31,27 @@
 
 
 Overflow::RtspController::RtspController (IRtspDelegate* delegate,
-                                          std::string url)
-    : TransportController (),
-      mDelegate (delegate),
+                                          std::string url,
+                                          std::function<void (const unsigned char*, size_t, bool)> sendRtspBytes,
+                                          std::function<void (int seconds)> startKeepAlive,
+                                          std::function<std::string ()> transportHeaderString,
+                                          std::function<void ()> reconnect)
+    : mDelegate (delegate),
       mUrl (url),
       mFactory (mUrl),
       mState (CLIENT_INITILIZED),
       mServerAllowsAggregate (false),
       mLastSeqNum (-1),
-      mIsFirstPayload (true)
-{
-    
+      mIsFirstPayload (true),
+      mSendRtspBytes (sendRtspBytes),
+      mStartKeepAlive (startKeepAlive),
+      mTransportHeaderString (transportHeaderString),
+      mReconnect (reconnect)
+{   
 }
 
 Overflow::RtspController::~RtspController ()
-{
-    
+{   
 }
 
 bool
@@ -58,11 +63,8 @@ Overflow::RtspController::haveSession () const
 void
 Overflow::RtspController::standby ()
 {
-    if (isConnected () and haveSession ())
+    if (haveSession ())
         sendTeardownRequest ();
-    
-    stopReconnectTimer ();
-    stopTransport ();
     
     resetClientState ();
 }
@@ -202,12 +204,8 @@ Overflow::RtspController::onStateChange(TransportState oldState,
     else if (newState == DISCONNECTED)
     {
         onStateChange (CLIENT_DISCONNECTED);
-        
-        stopTransportAsync ();
         resetClientState ();
-        
-        if (not isReconnecting())
-            reconnect ();
+        mReconnect ();
     }
     else
     {
@@ -420,7 +418,7 @@ Overflow::RtspController::sendSetupRequest()
         mFactory.setPath (setup_url);
     }
 
-    Setup* setup = mFactory.setupRequest (getTransportHeaderString ());
+    Setup* setup = mFactory.setupRequest (mTransportHeaderString ());
     sendRtsp (setup);
     delete setup;
 }
@@ -438,9 +436,9 @@ Overflow::RtspController::onSetupResponse(const Response* response)
         else
         {
             onStateChange(CLIENT_SETUP_OK);
-            mSession = resp.getSession();
-            startKeepAliveTimer(resp.getTimeoutSeconds());
-            sendPlayRequest();
+            mSession = resp.getSession ();
+            mStartKeepAlive (resp.getTimeoutSeconds());
+            sendPlayRequest ();
         }
     }
     catch (std::exception& e)
@@ -453,7 +451,7 @@ Overflow::RtspController::onSetupResponse(const Response* response)
 void
 Overflow::RtspController::onPlayResponse(const Response* response)
 {
-        // HANDLE PLAY RESPONSE
+    // HANDLE PLAY RESPONSE
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
     RtspResponse resp(response);
@@ -493,5 +491,6 @@ Overflow::RtspController::sendRtsp (Rtsp* request, bool responseTimeout)
 {
     int timeout = (responseTimeout) ? 3 : -1;
     const ByteBuffer& buf = request->getBuffer();
-    sendRtspBytes (buf.bytesPointer (), buf.length (), timeout);
+
+    mSendRtspBytes (buf.bytesPointer (), buf.length (), timeout);
 }

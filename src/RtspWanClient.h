@@ -22,30 +22,24 @@
 #ifndef __RTSP_WAN_CLIENT_H__
 #define __RTSP_WAN_CLIENT_H__
 
-#include "RtspController.h"
+#include "RtspClientController.h"
 #include "InterleavedTcpTransport.h"
 #include "IRtspDelegate.h"
-#include "Transport.h"
 
 #include <string>
 
 
 namespace Overflow
 {   
-    class RtspWanClient : public RtspController
+    class RtspWanClient : public RtspClientController<InterleavedTcpTransport>
     {
     public:
-        RtspWanClient(IRtspDelegate * const delegate, const std::string& url);
+        RtspWanClient (IRtspDelegate * const delegate, const std::string& url)
+            : RtspClientController <InterleavedTcpTransport> (delegate, url)
+        { }
 
-        ~RtspWanClient();
-
-    protected:
-        Transport* createTransport () override;
-
-    private:
-        std::string mUrl;
+        virtual ~RtspWanClient () { }
     };
-    
 };
 
 #endif //__RTSP_WAN_CLIENT_H__

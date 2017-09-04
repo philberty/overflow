@@ -50,7 +50,7 @@ set(OVERFLOW_HEADERS
   ByteBuffer.h
   InterleavedTcpTransport.h
   RtspController.h
-  TransportController.h
+  RtspClientController.h
   Options.h
   SessionDescriptionFactory.h
   Teardown.h
@@ -79,9 +79,7 @@ set(OVERFLOW_HEADERS
 )
 
 add_library(overflow 
-  RtspWanClient.cc
   RtspController.cc
-  TransportController.cc
   InterleavedTcpTransport.cc
   Response.cc
   RtspResponse.cc
@@ -101,14 +99,16 @@ add_library(overflow
 
   ${OVERFLOW_HEADERS}
   ${JNI_SOURCES}
+
+  $<TARGET_OBJECTS:glog_obj>
 )
 
 add_dependencies(overflow uv glog)
 
 if(BUILD_JNI)
-  target_link_libraries (overflow ${JNI_LIBS} uv glog)
+  target_link_libraries (overflow ${JNI_LIBS} uv)
 else()
-  target_link_libraries (overflow uv glog)
+  target_link_libraries (overflow uv)
 endif()
 
 install(TARGETS overflow

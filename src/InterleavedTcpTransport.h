@@ -38,14 +38,15 @@ namespace Overflow
     class InterleavedTcpTransport: public Transport
     {
     public:
-        InterleavedTcpTransport(ITransportDelegate * const delegate,
+        InterleavedTcpTransport(uvpp::loop& loop,
+                                ITransportDelegate * const delegate,
                                 const std::string& url);
 
         virtual ~InterleavedTcpTransport() { }
 
-        void setRtpInterleavedChannel(int channel);
+        void setRtpInterleavedChannel (int channel);
 
-        void setRtcpInterleavedChannel(int channel);
+        void setRtcpInterleavedChannel (int channel);
 
         void writeRtsp(const unsigned char *buffer,
                        const size_t length,
@@ -69,8 +70,7 @@ namespace Overflow
         void readHandler(const char* buf, ssize_t len);
         
         size_t readResponse(const unsigned char* buffer, size_t length);
-
-        uvpp::loop mLoop;
+        
         uvpp::Tcp mTcp;
         uvpp::Timer mConnectionTimer;
         uvpp::Timer mRequestTimer;

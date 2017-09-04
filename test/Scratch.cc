@@ -29,7 +29,7 @@
 
 class Delegate: public Overflow::IRtspDelegate
 {
-    void onPaletteType(Overflow::RtspSessionType type)
+    void onPaletteType(Overflow::RtspSessionType type) override
     {
         LOG(INFO) << "palette-type: "
                   << Overflow::SessionDescription::typeToString(type);
@@ -67,7 +67,7 @@ TEST(DEV, SCRATCH)
     std::string ffmpegUrl = "rtsp://127.0.0.1:8554/test.264";
     std::string gstreamerUrl = "rtsp://127.0.0.1:8555/test";
     
-    Overflow::RtspWanClient client (&delegate, gstreamerUrl);
+    Overflow::RtspWanClient client (&delegate, ffmpegUrl);
     
     client.start ();
     OverflowTest::Helpers::sleep (10);

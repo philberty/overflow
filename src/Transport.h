@@ -28,16 +28,22 @@
 #include "RtpPacket.h"
 #include "Response.h"
 
+#include <uvpp/loop.hpp>
+
 
 namespace Overflow
 {
     class Transport
     {
     public:
-        Transport(ITransportDelegate* const delegate)
-            : mDelegate(delegate),
-              mState(DISCONNECTED),
-              mErrorReason(OK)
+        Transport(uvpp::loop& loop,
+                  ITransportDelegate* const delegate,
+                  const std::string& url)
+            : mLoop (loop),
+              mDelegate (delegate),
+              mUrl (url),
+              mState (DISCONNECTED),
+              mErrorReason (OK)
         { }
 
         virtual ~Transport() { }
@@ -112,8 +118,11 @@ namespace Overflow
                 mDelegate->onTransportError(reason);
             }
         }
-        
+
+        uvpp::loop& mLoop;
         ITransportDelegate* const mDelegate;
+        std::string mUrl;
+        
         TransportState mState;
         TransportErrorReason mErrorReason;
     };

@@ -23,7 +23,7 @@ configure_file (
   "${PROJECT_BINARY_DIR}/src/Config.h"
   )
 
-option(BUILD_IOS "Enable iOS specific extensions" OFF)
+option(BUILD_MAC "Enable iOS/OSX specific extensions" OFF)
 if(BUILD_IOS)
   add_definitions(-D__IS_IOS__)
   set(LIBRARY_TYPE STATIC)

@@ -34,11 +34,15 @@
 
 namespace Overflow
 {
-    class RtspController: public TransportController,
-                          protected ITransportDelegate
+    class RtspController : public ITransportDelegate
     {
     public:
-        RtspController (IRtspDelegate* delegate, std::string url);
+        RtspController (IRtspDelegate* delegate,
+                        std::string url,
+                        std::function<void (const unsigned char*, size_t, bool)> sendRtspBytes,
+                        std::function<void (int seconds)> startKeepAlive,
+                        std::function<std::string ()> transportHeaderString,
+                        std::function<void ()> reconnect);
 
         virtual ~RtspController ();
 
@@ -46,18 +50,17 @@ namespace Overflow
 
         void sendPauseRequest ();
 
-        void standby ();
+        virtual void standby ();
 
     protected:
-        void onKeepAlive () override;
 
-        virtual Transport* createTransport () { return nullptr; }
+        void onKeepAlive ();
+
+        virtual void onTransportConnected () = 0;
         
-    private:
+    private:        
         // ITransportDelegate
         void onRtpPacket (const RtpPacket* packet) override;
-
-        // void onRtcpPacket(const RtcpPackat* packet) = 0;
 
         void onRtspResponse(const Response* response) override;
 
@@ -128,6 +131,11 @@ namespace Overflow
         int mLastSeqNum;
         bool mIsFirstPayload;
         std::vector<unsigned char> mCurrentFrame;
+        
+        std::function<void (const unsigned char*, size_t, bool)> mSendRtspBytes;
+        std::function<void (int seconds)> mStartKeepAlive;
+        std::function<std::string ()> mTransportHeaderString;
+        std::function<void ()> mReconnect;
     };
 };
 
