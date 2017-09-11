@@ -142,6 +142,10 @@ Overflow::InterleavedTcpTransport::start()
     mTcp.connect(mHost, mPort, mConnectionHandler);
     
     mLoop.run();
+
+    // lbuv task.h make_valgrind_happy
+    uv_walk (mLoop.get (), closeWalkCb, NULL);
+    uv_run (mLoop.get (), UV_RUN_DEFAULT);
 }
 
 void
@@ -283,3 +287,9 @@ Overflow::InterleavedTcpTransport::readResponse(const unsigned char* buffer,
     return offset;
 }
 
+void
+Overflow::InterleavedTcpTransport::closeWalkCb (uv_handle_t* handle, void* arg)
+{
+    if (!uv_is_closing (handle))
+        uv_close (handle, NULL);
+}

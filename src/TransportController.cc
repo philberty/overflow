@@ -185,8 +185,12 @@ Overflow::TransportController::eventLoopMain ()
     auto eventThreadId = std::this_thread::get_id();
     LOG(INFO) << "starting event-loop on: " << eventThreadId;
     mLoop.run ();
+
+    // lbuv task.h make_valgrind_happy
+    uv_walk (mLoop.get (), closeWalkCb, NULL);
+    uv_run (mLoop.get (), UV_RUN_DEFAULT);
 }
-        
+
 void
 Overflow::TransportController::stopEventLoop ()
 {
@@ -219,3 +223,9 @@ Overflow::TransportController::startKeepAliveTimer (int seconds)
         std::chrono::duration<uint64_t, std::milli>(timeout));
 }
 
+void
+Overflow::TransportController::closeWalkCb (uv_handle_t* handle, void* arg)
+{
+    if (!uv_is_closing (handle))
+        uv_close (handle, NULL);
+}

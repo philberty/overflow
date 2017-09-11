@@ -70,6 +70,8 @@ namespace Overflow
         
         size_t readResponse(const unsigned char* buffer, size_t length);
 
+        static void closeWalkCb(uv_handle_t* handle, void* arg);
+
         uvpp::loop mLoop;
         uvpp::Tcp mTcp;
         uvpp::Timer mConnectionTimer;

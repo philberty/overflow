@@ -94,6 +94,9 @@ namespace Overflow
         virtual Transport* createTransport () = 0;
 
     private:
+        
+        static void closeWalkCb (uv_handle_t* handle, void* arg);
+        
         uvpp::loop mLoop;
         uvpp::Timer mKeepAliveTimer;
         uvpp::Timer mReconnectTimer;
