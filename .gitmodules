@@ -10,9 +10,6 @@
 [submodule "ext/glog"]
 	path = ext/glog
 	url = https://github.com/redbrain/glog.git
-[submodule "ext/concurrentqueue"]
-	path = ext/concurrentqueue
-	url = https://github.com/redbrain/concurrentqueue
 [submodule "ext/libuv-cmake"]
 	path = ext/libuv-cmake
 	url = https://github.com/jen20/libuv-cmake
