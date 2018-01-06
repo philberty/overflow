@@ -22,8 +22,6 @@
 #ifndef __TRANSPORT_H__
 #define __TRANSPORT_H__
 
-#include <functional>
-
 #include "ITransportDelegate.h"
 #include "RtpPacket.h"
 #include "Response.h"

@@ -453,7 +453,7 @@ Overflow::RtspController::onSetupResponse(const Response* response)
 void
 Overflow::RtspController::onPlayResponse(const Response* response)
 {
-        // HANDLE PLAY RESPONSE
+    // HANDLE PLAY RESPONSE
     LOG(INFO) << "Received: "
               << response->getStringBuffer();
     RtspResponse resp(response);

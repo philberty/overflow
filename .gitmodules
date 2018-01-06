@@ -13,3 +13,6 @@
 [submodule "ext/libuv-cmake"]
 	path = ext/libuv-cmake
 	url = https://github.com/jen20/libuv-cmake
+[submodule "ext/libevent"]
+	path = ext/libevent
+	url = https://github.com/libevent/libevent.git

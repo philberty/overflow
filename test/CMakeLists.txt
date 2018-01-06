@@ -1,21 +1,9 @@
 include_directories(
-  ${PROJECT_SOURCE_DIR}/ext/concurrentqueue
-  ${PROJECT_SOURCE_DIR}/ext/libuv-cmake/libuv/include
-  ${PROJECT_SOURCE_DIR}/ext/uvpp/include
-  ${PROJECT_SOURCE_DIR}/ext/cppcodec/
-  ${PROJECT_SOURCE_DIR}/src
-  ${PROJECT_SOURCE_DIR}/test
-  ${PROJECT_BINARY_DIR}/ext/glog
-  ${PROJECT_SOURCE_DIR}/ext/glog/src
+  ${CMAKE_INSTALL_PREFIX}/include
+  ${PROJECT_BINARY_DIR}/src
   )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -g -O2")
-
-set(EXTRA_LINKS)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(EXTRA_LINKS "-lrt")
-endif()
-  
+link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+ 
 add_executable(testrunner
   testrunner.cc
 
@@ -29,8 +17,6 @@ add_executable(testrunner
   )
 
 target_link_libraries(testrunner
-  ${CMAKE_DL_LIBS}
-  ${EXTRA_LINKS}
   overflow
   gtest
   gmock

@@ -29,11 +29,6 @@
 #include "RtspFactory.h"
 #include "SessionDescription.h"
 
-#include <uvpp/loop.hpp>
-#include <uvpp/timer.hpp>
-#include <uvpp/work.hpp>
-#include <uvpp/async.hpp>
-
 #include <string>
 #include <thread>
 #include <mutex>

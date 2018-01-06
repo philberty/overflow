@@ -25,12 +25,7 @@
 #include "ITransportDelegate.h"
 #include "Transport.h"
 
-#include <functional>
 
-#include <uvpp/loop.hpp>
-#include <uvpp/tcp.hpp>
-#include <uvpp/async.hpp>
-#include <uvpp/timer.hpp>
 
 
 namespace Overflow

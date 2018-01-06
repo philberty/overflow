@@ -1,14 +1,8 @@
 include_directories(
-  ${PROJECT_SOURCE_DIR}/ext/libuv-cmake/libuv/include
-  ${PROJECT_SOURCE_DIR}/ext/uvpp/include
-  ${PROJECT_SOURCE_DIR}/ext/uri/include
+  ${CMAKE_INSTALL_PREFIX}/include
   ${PROJECT_BINARY_DIR}/src
-  ${PROJECT_BINARY_DIR}/ext/glog
-  ${PROJECT_SOURCE_DIR}/ext/glog/src
-  ${PROJECT_SOURCE_DIR}/ext/cppcodec/
   )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -O2")
+link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 set(JNI_SOURCES)
 set(JNI_LIBS)
@@ -103,12 +97,10 @@ add_library(overflow
   ${JNI_SOURCES}
 )
 
-add_dependencies(overflow uv glog)
-
 if(BUILD_JNI)
-  target_link_libraries (overflow ${JNI_LIBS} uv glog)
+  target_link_libraries (overflow ${JNI_LIBS} event glog)
 else()
-  target_link_libraries (overflow uv glog)
+  target_link_libraries (overflow event glog)
 endif()
 
 install(TARGETS overflow

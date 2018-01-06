@@ -24,7 +24,6 @@
 #include "Url.h"
 
 #include <glog/logging.h>
-#include <uvpp/resolver.hpp>
 
 
 Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * const delegate,
@@ -36,9 +35,6 @@ Overflow::InterleavedTcpTransport::InterleavedTcpTransport(ITransportDelegate * 
       mRequestTimer (mLoop),
       mRtpInterleavedChannel (0),
       mRtcpInterleavedChannel (1),
-      mConnectionHandler ([&](const uvpp::error& error) { connectionHandler(error); }),
-      mReadHandler ([&](const char* buf, ssize_t len) { readHandler(buf, len); }),
-      mStopHandler ([&]() { shutdown(); }),
       mStop (mLoop, mStopHandler)
 {
     Url uri(url, 554);

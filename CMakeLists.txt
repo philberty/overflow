@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(Overflow)
 
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default install path" FORCE)
+endif()
+
 include(TestBigEndian)
 test_big_endian(TEST_ENDIAN)
 message(STATUS "ENDIAN: ${TEST_ENDIAN}")
@@ -39,6 +43,9 @@ if(BUILD_IOS)
   set(CMAKE_XCODE_ATTRIBUTE_CONFIGURATION_TEMP_DIR "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)")
 endif()
 
+# compile options
+add_compile_options(-g -O2 -Wall)
+
 # add source
 add_subdirectory(src)
 
@@ -50,24 +57,38 @@ if(BUILD_JNI)
   set(UV_ANDROID ON)
 endif()
 
-# configure deps
-set(WITH_GFLAGS OFF CACHE BOOL "Use gflags")
-set(build_tests OFF CACHE BOOL "Build tests (run as 'test' target)")
-set(BUILD_GMOCK ON)
-set(BUILD_GTEST ON)
+# allow external projects
+include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+
+# deps
+ExternalProject_Add(
+  glog
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/glog
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  )
+ExternalProject_Add(
+  cppcodec
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/cppcodec
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  )
+ExternalProject_Add(
+  libevent
+  SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/libevent
+  CMAKE_ARGS -DEVENT__DISABLE_TESTS=ON -DEVENT__DISABLE_REGRESS=ON -DEVENT__DISABLE_OPENSSL=ON -DEVENT__DISABLE_SAMPLES=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+  )
 
 # unit-tests
 option(TESTS "Enable unit-tests" OFF)
 if(TESTS)
+  ExternalProject_Add(
+    googletest
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/googletest
+    CMAKE_ARGS -DBUILD_GMOCK=ON -DBUILD_GTEST=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/googletest
+  )
+  
   include(CTest)
   enable_testing()
   
   add_subdirectory(test)
 endif()
 
-# deps
-add_subdirectory(./ext/googletest)
-add_subdirectory(./ext/libuv-cmake)
-add_subdirectory(./ext/uvpp)
-add_subdirectory(./ext/glog)
-add_subdirectory(./ext/cppcodec)
